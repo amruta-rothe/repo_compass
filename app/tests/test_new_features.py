@@ -14,7 +14,6 @@ from app.services.ml_survey_service import (
 from app.services.auth_service import (
     sign_in_with_github,
     sign_in_with_google,
-    login_user,
 )
 from app.services.guide_generator import (
     save_cached_guide,
@@ -28,7 +27,11 @@ def test_ml_questions_definition():
     assert "q1_actions_done" in q_ids
     assert "q2_git_skills" in q_ids
     assert "q3_languages" in q_ids
-    assert "q7_experience_years" in q_ids
+    assert "q4_tools_installable" in q_ids
+    assert "q5_operating_system" in q_ids
+    assert "q6_biggest_fear" in q_ids
+    assert "q7_learning_style" in q_ids
+    assert "q8_stuck_threshold" in q_ids
 
 
 def test_extract_ml_feature_vector_beginner():
@@ -36,17 +39,18 @@ def test_extract_ml_feature_vector_beginner():
         "q1_actions_done": ["None"],
         "q2_git_skills": ["Nothing yet"],
         "q3_languages": ["Python"],
-        "q4_goal": "Learn how open source works",
-        "q5_first_issue_preference": "Small bug fix with a clear reproduction",
-        "q6_weekly_hours": "< 2 hours",
-        "q7_experience_years": "< 6 months",
-        "q8_work_preference": "No preference",
+        "q4_tools_installable": ["None of them"],
+        "q5_operating_system": "Windows",
+        "q6_biggest_fear": "Breaking something",
+        "q7_learning_style": "Show me an example",
+        "q8_stuck_threshold": "10 minutes",
     }
     vec = extract_ml_feature_vector(survey)
     assert vec["calibrated_tier"] == "beginner"
-    assert vec["programming_experience_years"] <= 0.5
+    assert vec["open_source_score"] == 0.0
     assert vec["git_skill_score"] == 0.0
-    assert vec["weekly_hours_available"] == 1.5
+    assert vec["stuck_threshold_hours"] == 0.16
+    assert isinstance(vec["feature_array"], list)
 
 
 def test_extract_ml_feature_vector_advanced():
@@ -63,18 +67,19 @@ def test_extract_ml_feature_vector_advanced():
             "Create branches and pull requests",
             "Resolve merge conflicts",
         ],
-        "q3_languages": ["Python", "Rust", "Go", "TypeScript"],
-        "q4_goal": "Get regular contributions in my target tech stack",
-        "q5_first_issue_preference": "Challenging core logic issue",
-        "q6_weekly_hours": "10+ hours",
-        "q7_experience_years": "3+ years",
-        "q8_work_preference": "Code only",
+        "q3_languages": ["Python", "Rust", "Go", "JavaScript/TypeScript"],
+        "q4_tools_installable": ["Python", "Node.js", "Docker"],
+        "q5_operating_system": "Linux",
+        "q6_biggest_fear": "Picking the wrong issue",
+        "q7_learning_style": "Explain the why",
+        "q8_stuck_threshold": "Half a day",
     }
     vec = extract_ml_feature_vector(survey)
     assert vec["calibrated_tier"] == "advanced"
-    assert vec["programming_experience_years"] == 4.0
     assert vec["git_skill_score"] == 1.0
-    assert vec["wants_code_only"] is True
+    assert vec["open_source_score"] >= 0.90
+    assert vec["languages_multi_hot"]["Python"] == 1
+    assert vec["languages_multi_hot"]["Rust"] == 1
 
 
 def test_social_auth_github_and_google():
@@ -82,13 +87,16 @@ def test_social_auth_github_and_google():
     gh_user, gh_token = sign_in_with_github("octocat_dev")
     assert gh_user is not None
     assert gh_token is not None
-    assert "github.com" in gh_user["email"] or "octocat_dev" in gh_user["display_name"].lower()
+    gh_email = getattr(gh_user, "email", "")
+    gh_name = getattr(gh_user, "display_name", "")
+    assert "octocat_dev" in gh_email.lower() or "octocat_dev" in gh_name.lower()
 
     # Test Google login
     g_user, g_token = sign_in_with_google("testuser@gmail.com")
     assert g_user is not None
     assert g_token is not None
-    assert g_user["email"] == "testuser@gmail.com"
+    g_email = getattr(g_user, "email", "")
+    assert g_email == "testuser@gmail.com"
 
 
 def test_guide_database_caching():
