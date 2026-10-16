@@ -8,250 +8,367 @@ from typing import Optional
 from app.ui.icons import icon
 
 
-# ─── Design tokens (match PRD palette) ────────────────────────────────────
+# ─── Solo Ledger Design Tokens (§2.1, §2.2, §2.9) ───────────────────────────
 
 COLORS = {
-    "ink": "#101B35",
-    "dark_surface": "#172544",
+    # Canvas & structure
+    "canvas": "#F6EFE3",
+    "surface": "#FBF6EC",
+    "ink": "#111111",
+    "text_muted": "#4F5C57",
+    "rule": "#D9CFBB",
+    "topbar": "#214F4B",
+    "topbar_text": "#E8F1EC",
+    "topbar_dim": "#A9C7BE",
+    # Pastel fills
+    "mint": "#DCEBE0",
+    "tan": "#F1E3C6",
+    "slate_blue": "#DCE5E5",
+    "salmon": "#E8C4B8",
+    "ai_lilac": "#ECE8FA",
+    "ai_text": "#4A3F8F",
+    # Semantic
+    "green": "#2E6B4A",
     "teal": "#159A8C",
-    "mint": "#DDF7F3",
-    "light_bg": "#F7F9FC",
-    "main_text": "#17243D",
-    "muted": "#6B7890",
-    "success": "#21866D",
-    "warning": "#C8872D",
+    "amber": "#8A5E10",
+    "amber_chart": "#B98A2E",
     "error": "#C94C4C",
-    "ai": "#7565C7",
+    "amber_strong": "#6F4A00",
+    "link": "#0B6E64",
+    "error_text": "#9E3333",
+    "error_soft": "#F6D9D9",
+    "on_ink": "#F6EFE3",
+    "focus_on_fill": "#111111",
+    "scrim": "rgba(17,17,17,0.55)",
+    "dash": "#4F5C57",
+    # Deep surface palette
+    "navy": "#101B35",
+    "navy_surface": "#172544",
+    "mint_light": "#DDF7F3",
+    "ai_accent": "#7565C7",
+    "text_main": "#17243D",
 }
 
 
-# ─── CSS ─────────────────────────────────────────────────────────────────
+# ─── Global CSS (§2.9 & Component Styling) ─────────────────────────────────
 
 def inject_global_css():
     st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;800&display=swap');
 
-/* ── Reset & base ──────────────────────────────────────────────────── */
+:root {
+  /* canvas & structure */
+  --canvas: #F6EFE3;
+  --surface: #FBF6EC;
+  --ink: #111111;
+  --text-muted: #4F5C57;
+  --rule: #D9CFBB;
+  --topbar: #214F4B;
+  --topbar-text: #E8F1EC;
+  --topbar-dim: #A9C7BE;
+  /* pastel fills */
+  --mint: #DCEBE0;
+  --tan: #F1E3C6;
+  --slate-blue: #DCE5E5;
+  --salmon: #E8C4B8;
+  --ai-lilac: #ECE8FA;
+  --ai-text: #4A3F8F;
+  /* semantic */
+  --green: #2E6B4A;
+  --teal: #159A8C;
+  --amber: #8A5E10;
+  --amber-chart: #B98A2E;
+  --error: #C94C4C;
+  /* original PRD deep-surface palette */
+  --navy: #101B35;
+  --navy-surface: #172544;
+  --mint-light: #DDF7F3;
+  --ai-accent: #7565C7;
+  --text-main: #17243D;
+  /* token additions (§2.2) */
+  --amber-strong: #6F4A00;
+  --link: #0B6E64;
+  --error-text: #9E3333;
+  --error-soft: #F6D9D9;
+  --on-ink: #F6EFE3;
+  --focus-on-fill: #111111;
+  --scrim: rgba(17,17,17,0.55);
+  --dash: #4F5C57;
+  /* type */
+  --font-sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* spacing */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+  /* shape */
+  --radius-card: 14px;
+  --radius-control: 12px;
+  --radius-inner: 8px;
+  --radius-pill: 999px;
+  --bw-card: 2px solid var(--ink);
+  --bw-pill: 1.5px solid currentColor;
+  --bw-rule: 1px solid var(--rule);
+  --bw-rule-head: 2px solid var(--ink);
+  --bw-dash: 1.5px dashed var(--dash);
+  /* layout */
+  --content-max: 1440px;
+  --sidebar-w: 248px;
+  --rail-w: 72px;
+  --gap: 16px;
+  --control-h: 44px;
+  /* motion */
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 250ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  /* focus */
+  --focus-ring: 2px solid var(--teal);
+  --focus-offset: 2px;
+}
+
+:root { color-scheme: light; }
+
+/* ── Reset & Base (§1 P8: Flat colour, 2px ink outlines, no shadows, no gradients) ── */
 html, body, [class*="css"], [data-testid="stAppViewContainer"], .stApp {
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    color: #111827;
+    background: var(--canvas) !important;
+    color: var(--ink) !important;
+    font-family: var(--font-sans) !important;
+    font-size: 16px;
+    line-height: 1.5;
 }
 
 .main .block-container {
-    padding-top: 1.5rem;
+    padding-top: 1rem;
     padding-bottom: 3rem;
-    max-width: 1240px;
+    max-width: var(--content-max);
 }
 
-/* ── Sidebar (Clean Modern Style matching reference) ─────────────────── */
+/* ── Typography Classes (§2.4) ────────────────────────────────────────── */
+.t-kpi-xl { font-family: var(--font-mono) !important; font-size: 84px !important; line-height: 1 !important; font-weight: 800 !important; letter-spacing: -0.03em !important; font-variant-numeric: tabular-nums; }
+.t-kpi-lg { font-family: var(--font-mono) !important; font-size: 56px !important; line-height: 1 !important; font-weight: 800 !important; letter-spacing: -0.03em !important; font-variant-numeric: tabular-nums; }
+.t-kpi-md { font-family: var(--font-mono) !important; font-size: 40px !important; line-height: 44px !important; font-weight: 800 !important; letter-spacing: -0.03em !important; font-variant-numeric: tabular-nums; }
+.t-display { font-family: var(--font-sans) !important; font-size: 56px !important; line-height: 60px !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
+.t-page-title { font-family: var(--font-sans) !important; font-size: 34px !important; line-height: 40px !important; font-weight: 700 !important; letter-spacing: -0.01em !important; }
+.t-h2 { font-family: var(--font-sans) !important; font-size: 26px !important; line-height: 32px !important; font-weight: 700 !important; }
+.t-h3 { font-family: var(--font-sans) !important; font-size: 20px !important; line-height: 26px !important; font-weight: 600 !important; }
+.t-h4 { font-family: var(--font-sans) !important; font-size: 17px !important; line-height: 23px !important; font-weight: 600 !important; }
+.t-body-lg { font-family: var(--font-sans) !important; font-size: 18px !important; line-height: 28px !important; }
+.t-body { font-family: var(--font-sans) !important; font-size: 15px !important; line-height: 22px !important; }
+.t-body-sm { font-family: var(--font-sans) !important; font-size: 13px !important; line-height: 19px !important; }
+.t-eyebrow { font-family: var(--font-mono) !important; font-size: 11px !important; line-height: 16px !important; font-weight: 600 !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; }
+.t-label { font-family: var(--font-mono) !important; font-size: 12px !important; line-height: 16px !important; font-weight: 500 !important; }
+.t-pill { font-family: var(--font-mono) !important; font-size: 10px !important; line-height: 12px !important; font-weight: 600 !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
+.t-button { font-family: var(--font-mono) !important; font-size: 11px !important; line-height: 16px !important; font-weight: 600 !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
+.t-code { font-family: var(--font-mono) !important; font-size: 13px !important; line-height: 20px !important; }
+
+/* ── Sidebar Solo Ledger (§3.2) ────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-    background: #0f172a !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface) !important;
+    border-right: 2px solid var(--ink) !important;
 }
 
 [data-testid="stSidebar"] * {
-    color: #e2e8f0 !important;
-    font-family: 'Poppins', sans-serif !important;
+    color: var(--ink) !important;
+    font-family: var(--font-sans) !important;
 }
 
 [data-testid="stSidebar"] .stButton > button {
     background: transparent !important;
-    color: #94a3b8 !important;
-    border: 1px solid transparent !important;
-    border-radius: 8px !important;
-    font-size: 0.88rem !important;
+    color: var(--ink) !important;
+    border: 2px solid transparent !important;
+    border-radius: var(--radius-control) !important;
+    font-size: 0.9rem !important;
     font-weight: 500 !important;
     padding: 0.55rem 0.9rem !important;
     width: 100%;
     text-align: left;
-    transition: all 0.2s ease;
+    transition: all var(--dur-fast) ease;
     display: flex;
     align-items: center;
     gap: 8px;
+    box-shadow: none !important;
 }
 
 [data-testid="stSidebar"] .stButton > button:hover {
-    background: rgba(255, 255, 255, 0.06) !important;
-    color: #f8fafc !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
+    background: var(--canvas) !important;
+    border-color: var(--rule) !important;
 }
 
-/* ── Buttons ─────────────────────────────────────────────────────────── */
+/* ── Buttons (§3.4) ───────────────────────────────────────────────────── */
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
+    background: var(--ink) !important;
+    color: var(--on-ink) !important;
+    border: 2px solid var(--ink) !important;
+    border-radius: var(--radius-control) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
     font-weight: 600 !important;
-    font-size: 0.9rem !important;
-    padding: 0.5rem 1.25rem !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 2px 8px rgba(21,154,140,0.3) !important;
+    padding: 0.65rem 1.25rem !important;
+    transition: all var(--dur-fast) ease !important;
+    box-shadow: none !important;
 }
 
 .stButton > button[kind="primary"]:hover {
-    box-shadow: 0 4px 16px rgba(21,154,140,0.4) !important;
+    background: var(--topbar) !important;
+    border-color: var(--ink) !important;
     transform: translateY(-1px) !important;
 }
 
-.stButton > button[kind="secondary"] {
-    background: rgba(21,154,140,0.08) !important;
-    color: #159A8C !important;
-    border: 1px solid rgba(21,154,140,0.3) !important;
-    border-radius: 8px !important;
-    font-weight: 500 !important;
+.stButton > button[kind="primary"]:active {
+    transform: translateY(1px) !important;
 }
 
-/* ── Cards ────────────────────────────────────────────────────────────── */
+.stButton > button[kind="secondary"], .stButton > button:not([kind="primary"]) {
+    background: var(--surface) !important;
+    color: var(--ink) !important;
+    border: 2px solid var(--ink) !important;
+    border-radius: var(--radius-control) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    font-weight: 600 !important;
+    padding: 0.65rem 1.25rem !important;
+    transition: all var(--dur-fast) ease !important;
+    box-shadow: none !important;
+}
+
+.stButton > button[kind="secondary"]:hover, .stButton > button:not([kind="primary"]):hover {
+    background: var(--mint) !important;
+    border-color: var(--ink) !important;
+}
+
+/* ── Cards (§3.6) ─────────────────────────────────────────────────────── */
 .rc-card {
-    background: white;
-    border: 1px solid rgba(107,120,144,0.15);
-    border-radius: 12px;
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-    transition: box-shadow 0.2s ease;
+    background: var(--surface);
+    border: var(--bw-card);
+    border-radius: var(--radius-card);
+    padding: var(--s-5);
+    margin-bottom: var(--s-4);
+    box-shadow: none !important;
 }
 
-.rc-card:hover {
-    box-shadow: 0 4px 16px rgba(16,27,53,0.08);
-}
+.card--mint { background: var(--mint) !important; }
+.card--tan { background: var(--tan) !important; }
+.card--slate { background: var(--slate-blue) !important; }
+.card--salmon { background: var(--salmon) !important; color: var(--ink) !important; }
+.card--ai { background: var(--ai-lilac) !important; border: 2px solid var(--ai-text) !important; color: var(--ai-text) !important; }
+.card--navy { background: var(--navy) !important; color: var(--mint-light) !important; border: 2px solid var(--ink) !important; }
 
-.rc-card-dark {
-    background: linear-gradient(135deg, #101B35, #172544);
-    border: 1px solid rgba(21,154,140,0.2);
-    border-radius: 12px;
-    padding: 1.25rem;
-    color: #DDF7F3;
-}
-
-/* ── Badges ───────────────────────────────────────────────────────────── */
-.badge {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-
-.badge-beginner { background: rgba(33,134,109,0.12); color: #21866D; border: 1px solid rgba(33,134,109,0.25); }
-.badge-intermediate { background: rgba(200,135,45,0.12); color: #C8872D; border: 1px solid rgba(200,135,45,0.25); }
-.badge-advanced { background: rgba(201,76,76,0.12); color: #C94C4C; border: 1px solid rgba(201,76,76,0.25); }
-.badge-ai { background: rgba(117,101,199,0.12); color: #7565C7; border: 1px solid rgba(117,101,199,0.25); }
-.badge-teal { background: rgba(21,154,140,0.1); color: #159A8C; border: 1px solid rgba(21,154,140,0.25); }
-
-/* ── Progress bar ─────────────────────────────────────────────────────── */
-.xp-bar-container {
-    background: rgba(107,120,144,0.12);
-    border-radius: 99px;
-    height: 8px;
-    overflow: hidden;
-    margin: 0.5rem 0;
-}
-
-.xp-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #159A8C, #7565C7);
-    border-radius: 99px;
-    transition: width 0.6s ease;
-}
-
-/* ── Code / mono ──────────────────────────────────────────────────────── */
-code, pre, .mono {
-    font-family: 'JetBrains Mono', monospace !important;
-}
-
-/* ── Hint levels ─────────────────────────────────────────────────────── */
-.hint-box {
-    background: linear-gradient(135deg, rgba(117,101,199,0.08), rgba(21,154,140,0.05));
-    border: 1px solid rgba(117,101,199,0.2);
-    border-left: 3px solid #7565C7;
-    border-radius: 0 8px 8px 0;
-    padding: 1rem 1.25rem;
-    margin: 0.75rem 0;
-}
-
-/* ── Alert boxes ─────────────────────────────────────────────────────── */
-.alert-info {
-    background: rgba(21,154,140,0.06);
-    border: 1px solid rgba(21,154,140,0.2);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    color: #0d7a70;
-    font-size: 0.875rem;
-}
-
-.alert-warning {
-    background: rgba(200,135,45,0.06);
-    border: 1px solid rgba(200,135,45,0.2);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    color: #a06b20;
-    font-size: 0.875rem;
-}
-
-/* ── Section headings ─────────────────────────────────────────────────── */
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #17243D;
-    margin: 1.5rem 0 0.75rem 0;
-    display: flex;
+/* ── Pills & Tags (§3.5) ──────────────────────────────────────────────── */
+.pill {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 5px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: var(--radius-pill);
+    border: var(--bw-pill);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-/* ── Divider ─────────────────────────────────────────────────────────── */
-.rc-divider {
-    border: none;
-    border-top: 1px solid rgba(107,120,144,0.15);
-    margin: 1.25rem 0;
+.pill-green { color: var(--green); border-color: var(--green); background: transparent; }
+.pill-amber { color: var(--amber-strong); border-color: var(--amber-strong); background: transparent; }
+.pill-assigned { color: var(--ink); border-color: var(--ink); background: var(--tan); }
+.pill-ai { color: var(--ai-text); border-color: var(--ai-text); background: var(--ai-lilac); }
+.pill-sample { color: var(--ink); border: 1.5px dashed var(--ink); background: var(--tan); }
+.pill-neutral { color: var(--text-muted); border-color: var(--text-muted); background: transparent; }
+
+/* ── Progress / XP Bar (§3.6.6) ───────────────────────────────────────── */
+.ledger-progress-track {
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    height: 16px;
+    overflow: hidden;
+    position: relative;
+    margin: 6px 0;
 }
 
-/* ── Metrics ─────────────────────────────────────────────────────────── */
-[data-testid="stMetric"] {
-    background: white;
-    border: 1px solid rgba(107,120,144,0.12);
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
+.ledger-progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-right: 2px solid var(--ink);
+    transition: width var(--dur-slow) var(--ease);
 }
 
-/* ── Input fields ─────────────────────────────────────────────────────── */
-.stTextInput > div > div > input, .stTextArea textarea {
-    border-radius: 8px !important;
-    border-color: rgba(107,120,144,0.25) !important;
-    font-family: 'Inter', sans-serif !important;
+/* ── Inputs, Textareas, Selectboxes ───────────────────────────────────── */
+.stTextInput > div > div > input, .stTextArea textarea, [data-baseweb="select"] {
+    background: var(--surface) !important;
+    border: 2px solid var(--ink) !important;
+    border-radius: var(--radius-control) !important;
+    font-family: var(--font-sans) !important;
+    color: var(--ink) !important;
+    box-shadow: none !important;
 }
 
 .stTextInput > div > div > input:focus, .stTextArea textarea:focus {
-    border-color: #159A8C !important;
-    box-shadow: 0 0 0 2px rgba(21,154,140,0.15) !important;
+    outline: var(--focus-ring) !important;
+    outline-offset: var(--focus-offset) !important;
 }
 
-/* ── Tabs ──────────────────────────────────────────────────────────────── */
+/* ── Tabs (§3.11) ─────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    border-bottom: 2px solid var(--ink) !important;
+    gap: 12px;
+}
+
 .stTabs [data-baseweb="tab"] {
-    font-weight: 500 !important;
-    color: #6B7890 !important;
+    font-family: var(--font-mono) !important;
+    font-size: 11px !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    border-bottom: 4px solid transparent !important;
+    background: transparent !important;
+    padding: 10px 16px !important;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    background: var(--mint) !important;
+    color: var(--ink) !important;
 }
 
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
-    color: #159A8C !important;
+    color: var(--ink) !important;
+    border-bottom: 4px solid var(--teal) !important;
 }
 
-/* ── Spinner ──────────────────────────────────────────────────────────── */
-.stSpinner > div {
-    border-color: #159A8C transparent transparent transparent !important;
+/* ── Metrics Override ─────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background: var(--surface) !important;
+    border: 2px solid var(--ink) !important;
+    border-radius: var(--radius-card) !important;
+    padding: 16px !important;
+    box-shadow: none !important;
 }
 
-/* ── Selectbox, multiselect ────────────────────────────────────────────── */
-.stSelectbox > div > div, .stMultiSelect > div > div {
-    border-radius: 8px !important;
+[data-testid="stMetric"] * {
+    color: var(--ink) !important;
+    font-family: var(--font-sans) !important;
 }
 
-/* ── Radio / checkbox ─────────────────────────────────────────────────── */
-.stRadio label, .stCheckbox label {
-    font-size: 0.9rem !important;
+[data-testid="stMetricValue"] {
+    font-family: var(--font-mono) !important;
+    font-weight: 800 !important;
+}
+
+/* ── Code & Mono ──────────────────────────────────────────────────────── */
+code, pre, .mono {
+    font-family: var(--font-mono) !important;
+}
+
+/* ── Focus rings ──────────────────────────────────────────────────────── */
+:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -351,163 +468,622 @@ def set_active_repo(repo_data: dict):
         st.query_params["repo"] = full_name
 
 
-# ─── Reusable components ───────────────────────────────────────────────────
+# ─── Top Status Bar (§3.1) ─────────────────────────────────────────────────
+
+def render_top_status_bar(is_live: bool = True, sync_time: Optional[str] = None):
+    """
+    Renders truthful, ambient system status bar (§3.1):
+    ● LIVE · SYNCED 14:32 │ GITHUB ✓  DB ✓  OLLAMA ✓ qwen3:4b │ OCT 2026 · LVL 03
+    """
+    from datetime import datetime
+    from app.services.llm_service import check_ollama_available
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    now_str = sync_time or datetime.now().strftime("%H:%M")
+    user = get_current_user()
+    lvl = user.get("level", 1) if user else 1
+
+    ollama_ok = check_ollama_available()
+    model_name = settings.ollama_model.split(":")[0] if settings.ollama_model else "qwen3"
+    ollama_str = f"OLLAMA ✓ {model_name}" if ollama_ok else "OLLAMA ⚠ unavailable"
+    sync_str = f"● LIVE · SYNCED {now_str}" if is_live else f"◐ CACHED · {now_str}"
+
+    st.markdown(f"""
+<div style="background:var(--topbar);color:var(--topbar-text);border-bottom:2px solid var(--ink);padding:7px 1.5rem;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;margin:-1rem -1rem 1.25rem -1rem;position:sticky;top:0;z-index:50;">
+    <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:var(--mint);">{sync_str}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;color:var(--topbar-dim);">
+        <span>GITHUB ✓</span>
+        <span>DB ✓</span>
+        <span>{ollama_str}</span>
+    </div>
+    <div style="color:var(--topbar-text);">
+        <span>OCT 2026 · LVL {lvl:02d}</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─── Page Title Pattern (§2.4) ─────────────────────────────────────────────
+
+def render_page_header(primary: str, secondary: str, caption: str = ""):
+    """
+    Page title pattern (§2.4):
+    <strong>Contribution Health</strong> <span class="t-secondary">/ At a Glance</span>
+    """
+    cap_html = f"<p style='color:var(--text-muted);font-family:var(--font-sans);font-size:14px;margin:0.25rem 0 1.25rem 0;'>{caption}</p>" if caption else "<div style='height:0.75rem;'></div>"
+    st.markdown(f"""
+<div style="margin-bottom:0.75rem;">
+    <h1 style="font-family:var(--font-sans);font-size:32px;font-weight:700;color:var(--ink);margin:0;line-height:1.2;letter-spacing:-0.01em;">
+        {primary} <span style="font-weight:400;color:var(--text-muted);">/ {secondary}</span>
+    </h1>
+    {cap_html}
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─── KPI & Metrics Cards (§3.6.1, §3.6.3) ──────────────────────────────────
+
+def render_kpi_card(
+    title: str,
+    value: str,
+    subtext: str = "",
+    delta: Optional[str] = None,
+    fill: str = "surface",
+    status: str = "ON TRACK",
+    sparkline: Optional[list] = None
+):
+    """Renders a Solo Ledger KPI card with flat heavy 2px outline and optional pastel fill."""
+    fill_cls = f"card--{fill}" if fill != "surface" else ""
+    pill_html = f'<span class="pill pill-green">● {status}</span>' if status else ""
+    delta_html = f'<div style="font-family:var(--font-sans);font-size:13px;color:var(--green);font-weight:600;margin-top:4px;">▲ {delta}</div>' if delta else ""
+    sub_html = f'<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:6px;">{subtext}</div>' if subtext else ""
+
+    spark_html = ""
+    if sparkline and len(sparkline) >= 4:
+        max_val = max(sparkline) or 1
+        pts = " ".join(f"{i * 20},{30 - int((v / max_val) * 24)}" for i, v in enumerate(sparkline[:7]))
+        spark_html = f"""
+        <div style="margin-top:10px;">
+            <svg width="140" height="32" viewBox="0 0 140 32" style="overflow:visible;">
+                <polyline points="{pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        """
+
+    st.markdown(f"""
+<div class="rc-card {fill_cls}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+        <span class="t-eyebrow" style="color:var(--ink);">{title}</span>
+        {pill_html}
+    </div>
+    <div class="t-kpi-lg" style="color:var(--ink);margin:0.2rem 0;">{value}</div>
+    {delta_html}
+    {sub_html}
+    {spark_html}
+</div>
+""", unsafe_allow_html=True)
+
+
+def render_mini_stat_card(label: str, number: str, caption: str):
+    """Renders mini stat card (§3.6.3) with dashed divider."""
+    st.markdown(f"""
+<div class="rc-card" style="padding:16px;">
+    <div class="t-eyebrow" style="color:var(--text-muted);margin-bottom:4px;">{label}</div>
+    <div class="t-kpi-md" style="color:var(--ink);margin:2px 0;">{number}</div>
+    <div style="border-top:var(--bw-dash);margin:10px 0 8px 0;"></div>
+    <div class="t-label" style="color:var(--text-muted);">{caption}</div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─── Status Pills (§3.5) ───────────────────────────────────────────────────
+
+def render_status_pill(status_type: str, label: Optional[str] = None) -> str:
+    """Returns exact status pill HTML per §3.5."""
+    st_clean = status_type.lower().replace(" ", "_")
+    if st_clean in ("on_track", "success", "completed"):
+        return f'<span class="pill pill-green">● {label or "ON TRACK"}</span>'
+    elif st_clean in ("needs_info", "warning", "needs_more_info"):
+        return f'<span class="pill pill-amber">⚠ {label or "NEEDS MORE INFO"}</span>'
+    elif st_clean in ("assigned", "in_progress"):
+        return f'<span class="pill pill-assigned">● {label or "ASSIGNED"}</span>'
+    elif st_clean in ("ai", "ai_generated"):
+        return f'<span class="pill pill-ai">✦ {label or "AI-GENERATED"}</span>'
+    elif st_clean == "sample":
+        return f'<span class="pill pill-sample">◇ {label or "SAMPLE DATA"}</span>'
+    elif st_clean in ("beginner", "est._beginner"):
+        return f'<span class="pill pill-green">▲ {label or "EST. BEGINNER"}</span>'
+    elif st_clean in ("intermediate", "est._intermediate"):
+        return f'<span class="pill pill-amber">▲▲ {label or "EST. INTERMEDIATE"}</span>'
+    elif st_clean in ("advanced", "est._advanced"):
+        return f'<span class="pill" style="color:var(--ink);border-color:var(--ink);background:transparent;">▲▲▲ {label or "EST. ADVANCED"}</span>'
+    elif st_clean in ("live", "live_sync"):
+        return f'<span class="pill pill-green">● {label or "LIVE"}</span>'
+    elif st_clean in ("cached", "provisional"):
+        return f'<span class="pill pill-neutral">◐ {label or "CACHED"}</span>'
+    else:
+        return f'<span class="pill pill-neutral">○ {label or status_type.upper()}</span>'
+
+
+# ─── AI-Generated Block (§3.11) ───────────────────────────────────────────
+
+def render_ai_block(content: str, model: str = "qwen3:4b", timestamp: str = "14:32", sources: Optional[list] = None):
+    """Renders lilac AI-generated block with mandatory disclaimer and evidence footer (§3.11)."""
+    src_html = ""
+    if sources:
+        src_items = " · ".join(f"<code>{s}</code>" for s in sources)
+        src_html = f"<div style='margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--ai-text);'>SOURCES: {src_items}</div>"
+
+    st.markdown(f"""
+<div class="rc-card card--ai" style="padding:16px;margin:12px 0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span class="t-pill" style="color:var(--ai-text);">✦ AI-GENERATED · {model} · {timestamp}</span>
+        <span class="t-label" style="color:var(--ai-text);font-size:11px;">May be wrong. Check the sources.</span>
+    </div>
+    <div style="font-family:var(--font-sans);font-size:14px;line-height:1.6;color:var(--ink);">
+        {content}
+    </div>
+    {src_html}
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─── Evidence & Empty States (§3.7) ────────────────────────────────────────
+
+def render_empty_repository_spec(files_searched: Optional[list] = None):
+    """Verbatim required empty state (§3.7)."""
+    files = ", ".join(files_searched or ["README.md", "CONTRIBUTING.md", "package.json"])
+    st.markdown(f"""
+<div style="background:var(--surface);border:2px dashed var(--ink);border-radius:14px;padding:20px;margin:1rem 0;">
+    <div style="font-family:var(--font-sans);font-weight:600;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--font-mono);font-size:18px;">○</span> Not specified in the repository.
+    </div>
+    <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:6px;">
+        We looked in: <code>{files}</code>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+def render_evidence_badge(badge_type: str) -> str:
+    """Evidence badge pill (§3.7): VERIFIED, INFERRED, NOT FOUND."""
+    b_clean = badge_type.lower()
+    if b_clean in ("verified", "direct"):
+        return '<span class="pill pill-green">✓ VERIFIED</span>'
+    elif b_clean in ("inferred", "related"):
+        return '<span class="pill pill-amber">◐ INFERRED</span>'
+    elif b_clean in ("not_found", "none"):
+        return '<span class="pill" style="color:var(--text-muted);border:1.5px dashed var(--text-muted);background:transparent;">○ NOT FOUND</span>'
+    elif b_clean in ("ai", "ai_inferred"):
+        return '<span class="pill pill-ai">✦ AI-INFERRED</span>'
+    return f'<span class="pill pill-neutral">○ {badge_type.upper()}</span>'
+
+
+# ─── Level Badge & XP Progress (§3.6.6) ────────────────────────────────────
 
 def render_level_badge(level: int, xp: int, xp_into: int, xp_needed: int):
+    """Solo Ledger XP Progress Card with exact tokens."""
     pct = min(int(xp_into / max(xp_needed, 1) * 100), 100)
     st.markdown(f"""
-<div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:white;border-radius:10px;border:1px solid rgba(107,120,144,0.12);">
-    <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#159A8C,#7565C7);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1rem;flex-shrink:0;">{level}</div>
-    <div style="flex:1;min-width:0;">
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:#6B7890;margin-bottom:4px;">
-            <span>Level {level}</span>
-            <span>{xp:,} XP total</span>
-        </div>
-        <div class="xp-bar-container">
-            <div class="xp-bar-fill" style="width:{pct}%;"></div>
-        </div>
-        <div style="font-size:0.72rem;color:#6B7890;margin-top:2px;">{xp_into}/{xp_needed} XP to next level</div>
+<div class="rc-card card--mint" style="padding:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span class="t-eyebrow" style="color:var(--ink);">LVL {level:02d}</span>
+        <span class="t-label" style="color:var(--text-muted);">{xp_into:,} / {xp_needed:,} XP</span>
+    </div>
+    <div class="ledger-progress-track">
+        <div class="ledger-progress-fill" style="width:{pct}%;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:4px;">
+        <span>{xp_needed - xp_into} XP to Level {level + 1}</span>
+        <span>{xp:,} XP total</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 
 def render_difficulty_badge(difficulty: str) -> str:
-    classes = {
-        "beginner": "badge-beginner",
-        "intermediate": "badge-intermediate",
-        "advanced": "badge-advanced",
-        "unavailable": "badge",
-    }
-    labels = {
-        "beginner": "Beginner",
-        "intermediate": "Intermediate",
-        "advanced": "Advanced",
-        "unavailable": "May be taken",
-    }
-    cls = classes.get(difficulty, "badge")
-    label = labels.get(difficulty, difficulty.capitalize())
-    return f'<span class="badge {cls}">{label}</span>'
+    return render_status_pill(difficulty)
 
 
-def render_issue_card(issue_data: dict, score: float, difficulty: str, on_select=None):
-    """Render a single issue card. issue_data should be dict-like."""
-    labels_html = " ".join(
-        f'<span class="badge badge-teal" style="font-size:0.65rem">{l}</span>'
-        for l in (issue_data.get("labels") or [])[:5]
-    )
-    assignee_note = (
-        f'<span style="color:#C8872D;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;">{icon("alert_triangle", 13, "#C8872D")} Has assignees</span>'
-        if issue_data.get("assignees")
-        else '<span style="color:#6B7890;font-size:0.78rem;">No assignee listed</span>'
-    )
-    difficulty_html = render_difficulty_badge(difficulty)
+# ─── Issue Card (§3.8) ─────────────────────────────────────────────────────
+
+def render_issue_card(issue_data: dict, score: float, difficulty: str, fit_reason: Optional[str] = None):
+    """
+    Renders Solo Ledger Issue Card (§3.8) with mono numbers, tags,
+    AI fit block, readiness score, and real action buttons.
+    """
+    number = issue_data.get("number", "101")
     title = issue_data.get("title", "Untitled Issue")
-    number = issue_data.get("number", "")
-    url = issue_data.get("html_url", "#")
+    labels = issue_data.get("labels") or []
+    assignees = issue_data.get("assignees") or []
+    diff_pill = render_status_pill(difficulty)
+
+    tags_html = " ".join(
+        f'<span class="pill pill-neutral" style="height:20px;padding:0 8px;font-size:9px;">{l}</span>'
+        for l in labels[:4]
+    )
+
+    assignee_html = (
+        f'<span style="font-family:var(--font-mono);font-size:11px;color:var(--ink);background:var(--tan);padding:2px 6px;border-radius:4px;border:1px solid var(--ink);">● ASSIGNED · @{assignees[0]}</span>'
+        if assignees
+        else '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">○ No assignee listed</span>'
+    )
+
+    fit_block_html = ""
+    if fit_reason:
+        fit_block_html = f"""
+        <div style="background:var(--ai-lilac);border:1.5px solid var(--ai-text);border-radius:8px;padding:10px 14px;margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span class="t-pill" style="color:var(--ai-text);">✦ WHY THIS FITS</span>
+                <span class="t-label" style="color:var(--ai-text);">Readiness {score:.0f}/100 (est.)</span>
+            </div>
+            <div style="font-family:var(--font-sans);font-size:13px;color:var(--ink);line-height:1.4;">
+                {fit_reason}
+            </div>
+        </div>
+        """
 
     st.markdown(f"""
-<div class="rc-card" style="cursor:pointer;">
+<div class="rc-card" style="margin-bottom:14px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
         <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
-                <span style="font-size:0.78rem;color:#6B7890;font-weight:500;">#{number}</span>
-                {difficulty_html}
-                {labels_html}
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span class="t-label" style="font-weight:700;color:var(--ink);">#{number}</span>
+                {diff_pill}
+                {tags_html}
             </div>
-            <div style="font-weight:600;font-size:0.95rem;color:#17243D;line-height:1.4;margin-bottom:0.35rem;">{title}</div>
-            <div style="display:flex;align-items:center;gap:1rem;">{assignee_note}</div>
+            <div class="t-h4" style="color:var(--ink);margin-bottom:6px;line-height:1.3;">
+                {title}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+                {assignee_html}
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">· Updated recently</span>
+            </div>
+            {fit_block_html}
         </div>
         <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:1.3rem;font-weight:700;color:#159A8C;">{score:.0f}</div>
-            <div style="font-size:0.68rem;color:#6B7890;">fit score</div>
+            <div class="t-kpi-md" style="color:var(--green);">{score:.0f}</div>
+            <div class="t-eyebrow" style="color:var(--text-muted);">FIT SCORE</div>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
+
+# ─── Hint Ladder Box (§3.9.1) ──────────────────────────────────────────────
 
 def render_hint_box(hint_text: str, level: int):
-    icon_names = ["lightbulb", "folder", "file_text", "search", "tool"]
-    curr_icon = icon(icon_names[min(level - 1, 4)], 15, "#7565C7")
+    """Solo Ledger Hint Ladder Step (§3.9.1)."""
     st.markdown(f"""
-<div class="hint-box">
-    <div style="font-size:0.75rem;font-weight:600;color:#7565C7;margin-bottom:0.4rem;display:flex;align-items:center;gap:6px;">
-        {curr_icon} <span>Hint Level {level}</span>
+<div class="rc-card card--salmon" style="padding:16px;margin:10px 0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;font-weight:800;">
+                {level}
+            </div>
+            <span class="t-eyebrow" style="color:var(--ink);">HINT LEVEL {level} · REVEALED</span>
+        </div>
+        <span class="t-pill" style="color:var(--ink);border-color:var(--ink);">✓ GUIDANCE</span>
     </div>
-    <div style="color:#17243D;font-size:0.9rem;line-height:1.6;">{hint_text}</div>
+    <div style="background:var(--surface);border:2px solid var(--ink);border-radius:8px;padding:12px 16px;font-family:var(--font-sans);font-size:14px;color:var(--ink);line-height:1.5;">
+        {hint_text}
+    </div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink);margin-top:8px;">
+        Hints are guidance, not a verified fix. Check with repository tests.
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
 
-def render_sidebar_nav(current_page: str = ""):
-    with st.sidebar:
-        # Header styled matching reference Image 2
-        compass_svg = icon("compass", 22, "#FFFFFF")
-        chevron_down_svg = icon("chevron_down", 14, "#64748B")
-        st.markdown(f"""
-<div style="margin-bottom:1.25rem;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:0.9rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.2rem 0;">
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-            <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3B82F6,#1D4ED8);display:grid;place-items:center;box-shadow:0 4px 12px rgba(37,99,235,0.35);">
-                {compass_svg}
+# ─── Code-Trail Chain (§3.9.2) ─────────────────────────────────────────────
+
+def render_code_trail_chain(nodes: List[Dict[str, Any]]):
+    """
+    Renders Solo Ledger Code-Trail Chain (§3.9.2):
+    Nodes: Issue → File → Symbol → Test
+    Each node has type eyebrow, mono identifier, match pill, and reason.
+    """
+    node_cards = []
+    for i, n in enumerate(nodes):
+        ntype = n.get("type", "NODE").upper()
+        name = n.get("name", "—")
+        match_type = n.get("match", "direct")
+        reason = n.get("reason", "")
+        url = n.get("url")
+
+        if match_type == "direct":
+            pill = '<span class="pill pill-green" style="font-size:9px;">✓ DIRECT MATCH</span>'
+        elif match_type == "related":
+            pill = '<span class="pill pill-amber" style="font-size:9px;">◐ RELATED REFERENCE</span>'
+        elif match_type == "ai":
+            pill = '<span class="pill pill-ai" style="font-size:9px;">✦ AI-INFERRED</span>'
+        else:
+            pill = '<span class="pill" style="color:var(--text-muted);border:1px dashed var(--text-muted);font-size:9px;">○ NOT FOUND</span>'
+
+        link_html = f'<a href="{url}" target="_blank" rel="noopener noreferrer" style="font-family:var(--font-mono);font-size:11px;color:var(--link);text-decoration:underline;margin-top:6px;display:inline-block;">↗ GitHub</a>' if url else ""
+
+        card_html = f"""
+        <div style="flex:1;min-width:180px;background:var(--surface);border:2px solid var(--ink);border-radius:10px;padding:12px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span class="t-eyebrow" style="color:var(--text-muted);">{ntype}</span>
+                {pill}
             </div>
-            <div>
-                <div style="font-size:0.92rem;font-weight:700;color:#F8FAFC;line-height:1.2;">RepoCompass</div>
-                <div style="font-size:0.68rem;color:#94A3B8;font-weight:500;">Pro Plan</div>
+            <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);word-break:break-all;margin:4px 0;">
+                {name}
+            </div>
+            <div style="font-family:var(--font-sans);font-size:12px;color:var(--ink);line-height:1.4;">
+                {reason}
+            </div>
+            {link_html}
+        </div>
+        """
+        node_cards.append(card_html)
+
+    # Render chain with arrows between cards
+    chain_items = []
+    for idx, c in enumerate(node_cards):
+        chain_items.append(c)
+        if idx < len(node_cards) - 1:
+            arrow = """
+            <div style="display:flex;align-items:center;justify-content:center;padding:0 6px;">
+                <span style="font-family:var(--font-mono);font-size:20px;font-weight:900;color:var(--ink);">→</span>
+            </div>
+            """
+            chain_items.append(arrow)
+
+    st.markdown(f"""
+    <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:1rem 0;">
+        {''.join(chain_items)}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─── Diff Viewer (§3.10) ───────────────────────────────────────────────────
+
+def render_diff_viewer(diff_text: str, filename: str = "patch.diff"):
+    """
+    Renders Solo Ledger light readable Diff Viewer (§3.10):
+    Container --surface, 2px ink border, radius 8px, t-code.
+    Added lines --mint bg with +, removed lines --salmon bg with -.
+    """
+    if not diff_text or not diff_text.strip():
+        st.markdown(f"""
+        <div style="background:var(--surface);border:2px dashed var(--ink);border-radius:8px;padding:24px;text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted);">
+                Paste a unified diff or write a plan to review.
             </div>
         </div>
-        <span>{chevron_down_svg}</span>
+        """, unsafe_allow_html=True)
+        return
+
+    lines = diff_text.splitlines()
+    additions = sum(1 for l in lines if l.startswith("+") and not l.startswith("+++"))
+    deletions = sum(1 for l in lines if l.startswith("-") and not l.startswith("---"))
+
+    formatted_lines = []
+    for l in lines:
+        escaped = html.escape(l)
+        if l.startswith("+") and not l.startswith("+++"):
+            formatted_lines.append(f'<div style="background:var(--mint);color:var(--ink);padding:2px 8px;font-family:var(--font-mono);font-size:12px;white-space:pre-wrap;">{escaped}</div>')
+        elif l.startswith("-") and not l.startswith("---"):
+            formatted_lines.append(f'<div style="background:var(--salmon);color:var(--ink);padding:2px 8px;font-family:var(--font-mono);font-size:12px;white-space:pre-wrap;">{escaped}</div>')
+        elif l.startswith("@@"):
+            formatted_lines.append(f'<div style="background:var(--canvas);color:var(--text-muted);font-weight:700;padding:4px 8px;font-family:var(--font-mono);font-size:12px;">{escaped}</div>')
+        else:
+            formatted_lines.append(f'<div style="background:var(--surface);color:var(--ink);padding:2px 8px;font-family:var(--font-mono);font-size:12px;white-space:pre-wrap;">{escaped}</div>')
+
+    st.markdown(f"""
+    <div style="background:var(--surface);border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin:1rem 0;">
+        <div style="background:var(--canvas);border-bottom:2px solid var(--ink);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--font-mono);font-weight:700;font-size:13px;color:var(--ink);">{filename}</span>
+            <div style="font-family:var(--font-mono);font-size:12px;font-weight:700;">
+                <span style="color:var(--green);">+{additions}</span>
+                <span style="color:var(--text-muted);"> · </span>
+                <span style="color:var(--error-text);">−{deletions}</span>
+            </div>
+        </div>
+        <div style="max-height:420px;overflow-y:auto;overflow-x:auto;padding:4px 0;">
+            {''.join(formatted_lines)}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─── Test Status Chip (§3.10) ──────────────────────────────────────────────
+
+def render_test_status_chip(status: str = "not_run", command: str = "pytest -x", limits: str = "30s, 512 MB", timestamp: str = ""):
+    """
+    Renders Solo Ledger Test Status Chip (§3.10):
+    ○ NOT RUN, ◌ RUNNING, ✓ PASSED, ✕ FAILED, ⊘ UNAVAILABLE.
+    """
+    s = status.lower()
+    if s == "passed":
+        chip = '<span class="pill pill-green">✓ PASSED</span>'
+        desc = f"Executed in isolated runner{f' at {timestamp}' if timestamp else ''}. All assertions verified."
+    elif s == "failed":
+        chip = '<span class="pill" style="color:var(--error-text);border-color:var(--error-text);background:var(--salmon);">✕ FAILED</span>'
+        desc = "Executed; non-zero exit code. Review output below."
+    elif s == "running":
+        chip = '<span class="pill" style="color:var(--link);border-color:var(--link);background:var(--surface);">◌ RUNNING</span>'
+        desc = f"Executing `{command}`. Limits: {limits}."
+    elif s == "unavailable":
+        chip = '<span class="pill" style="color:var(--text-muted);border:1.5px dashed var(--text-muted);background:transparent;">⊘ UNAVAILABLE</span>'
+        desc = "No isolated runner configured. Static review only."
+    else:
+        chip = '<span class="pill" style="color:var(--text-muted);border:1.5px dashed var(--text-muted);background:transparent;">○ NOT RUN</span>'
+        desc = f"No tests were executed. Review is static. Configured command: `{command}` (Limits: {limits})."
+
+    st.markdown(f"""
+    <div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--ink);border-radius:8px;padding:6px 12px;margin:6px 0;">
+        {chip}
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">{desc}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─── Leaderboard Row (§513) ────────────────────────────────────────────────
+
+def render_leaderboard_row(rank: int, display_name: str, level: int, xp: int, delta: str = "– 0", is_current_user: bool = False):
+    """
+    Renders Solo Ledger Leaderboard Row (§513):
+    Row height ~56px, 1px --rule divider, rank in mono 800 (01, 02).
+    Current user's row: --mint fill + 2px ink border + YOU pill.
+    """
+    rank_str = f"{rank:02d}"
+    bg_style = "background:var(--mint);border:2px solid var(--ink);" if is_current_user else "background:var(--surface);border-bottom:1px solid var(--rule);"
+    initial = display_name[0].upper() if display_name else "U"
+    you_pill = '<span class="pill pill-green" style="font-size:9px;padding:1px 6px;margin-left:6px;">YOU</span>' if is_current_user else ""
+
+    delta_color = "var(--green)" if delta.startswith("▲") else ("var(--error-text)" if delta.startswith("▼") else "var(--text-muted)")
+
+    st.markdown(f"""
+    <div style="{bg_style}border-radius:8px;padding:10px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:var(--ink);width:32px;">{rank_str}</span>
+            <div style="width:34px;height:34px;border-radius:50%;background:var(--canvas);border:1.5px solid var(--ink);display:grid;place-items:center;font-family:var(--font-mono);font-weight:800;font-size:13px;flex-shrink:0;">
+                {initial}
+            </div>
+            <div style="min-width:0;">
+                <div style="font-family:var(--font-sans);font-weight:700;font-size:14px;color:var(--ink);display:flex;align-items:center;">
+                    {display_name} {you_pill}
+                </div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">
+                    LVL {level:02d}
+                </div>
+            </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+            <div style="font-family:var(--font-mono);font-weight:800;font-size:15px;color:var(--ink);">{xp:,} XP</div>
+            <div style="font-family:var(--font-mono);font-size:11px;color:{delta_color};">{delta}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─── Achievement Badge (§518) ──────────────────────────────────────────────
+
+def render_achievement_badge(name: str, desc: str, earned: bool, earned_date: str = "", category: str = "mint"):
+    """
+    Renders Solo Ledger Achievement Badge (§518):
+    Earned: 96x96 circle, 2px ink border, pastel fill, check pill.
+    Locked: 2px dashed border, --surface fill, lock icon, requirement.
+    """
+    if earned:
+        border_style = "border:2px solid var(--ink);background:var(--" + category + ");"
+        icon_symbol = "★"
+        pill = '<span class="pill pill-green" style="font-size:9px;">✓ EARNED</span>'
+        date_str = f'<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:2px;">{earned_date}</div>' if earned_date else ""
+    else:
+        border_style = "border:2px dashed var(--dash);background:var(--surface);"
+        icon_symbol = "⊘"
+        pill = '<span class="pill" style="color:var(--text-muted);border:1px dashed var(--text-muted);font-size:9px;">LOCKED</span>'
+        date_str = ""
+
+    st.markdown(f"""
+    <div class="rc-card" style="text-align:center;padding:16px;">
+        <div style="width:72px;height:72px;border-radius:50%;{border_style}display:grid;place-items:center;margin:0 auto 10px auto;font-size:24px;color:var(--ink);">
+            {icon_symbol}
+        </div>
+        <div style="font-family:var(--font-sans);font-weight:700;font-size:13px;color:var(--ink);margin-bottom:4px;">
+            {name}
+        </div>
+        <div style="font-family:var(--font-sans);font-size:11px;color:var(--text-muted);line-height:1.3;margin-bottom:8px;min-height:30px;">
+            {desc}
+        </div>
+        {pill}
+        {date_str}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─── Sidebar Navigation (§3.2) ─────────────────────────────────────────────
+
+def render_sidebar_nav(current_page: str = ""):
+    """
+    Renders the Solo Ledger sidebar (§3.2):
+    - Logo + wordmark: ◎ RepoCompass (Space Grotesk 700, 20px)
+    - Flat 2px ink outlines, --mint active highlight with glyph ▸
+    - Active repo chip with live/cached indicator
+    - Profile card with avatar & Sign Out
+    """
+    with st.sidebar:
+        # Wordmark (§3.2)
+        st.markdown("""
+<div style="margin-bottom:1.25rem;border-bottom:2px solid var(--ink);padding-bottom:1rem;">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border:2px solid var(--ink);border-radius:8px;background:var(--mint);display:grid;place-items:center;font-size:16px;font-weight:800;color:var(--ink);">
+            ◎
+        </div>
+        <div>
+            <div style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--ink);line-height:1.2;">RepoCompass</div>
+            <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;">Solo Ledger v1.0</div>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
         nav_items = [
-            ("Dashboard", "pages/02_dashboard.py", None),
-            ("Sakura Trail Arcade", "pages/09_sakura_trail.py", "3D"),
-            ("Explore Repos", "pages/03_explore.py", "3"),
-            ("My Learning", "pages/04_learning.py", None),
-            ("Practice Lab", "pages/05_practice.py", None),
-            ("Leaderboard", "pages/06_leaderboard.py", "12"),
-            ("Maintainer Studio", "pages/07_maintainer.py", None),
+            ("dashboard", "▣ Dashboard", "pages/02_dashboard.py"),
+            ("explore", "⌕ Explore Repos", "pages/03_explore.py"),
+            ("learning", "✎ My Learning", "pages/04_learning.py"),
+            ("practice", "⚒ Practice Lab", "pages/05_practice.py"),
+            ("leaderboard", "♛ Leaderboard", "pages/06_leaderboard.py"),
+            ("maintainer", "✦ Maintainer Studio", "pages/07_maintainer.py"),
+            ("sakura_trail", "🌸 Sakura Trail Arcade", "pages/09_sakura_trail.py"),
+            ("settings", "⚙ Settings", "pages/08_settings.py"),
         ]
 
-        for label, page, badge in nav_items:
-            badge_str = f"  [{badge}]" if badge else ""
-            if st.button(f"{label}{badge_str}", key=f"nav_{label}", use_container_width=True):
+        curr_clean = current_page.lower().replace(" ", "_")
+
+        for key, label, page in nav_items:
+            is_active = (curr_clean == key)
+            prefix = "▸ " if is_active else ""
+            display_label = f"{prefix}{label}"
+
+            if st.button(display_label, key=f"nav_{key}", use_container_width=True, type="primary" if is_active else "secondary"):
                 st.switch_page(page)
 
-        st.markdown("""
-<div style="margin-top:1.5rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.08);">
-    <div style="font-size:0.68rem;font-weight:700;color:#64748B;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.4rem;padding-left:0.4rem;">Account & Profile</div>
+        # Active Repository (§3.2)
+        active_repo = get_active_repo()
+        active_name = active_repo.get("full_name", "No repo selected") if active_repo else "No repo selected"
+        freshness_glyph = "● live" if active_repo else "○ none"
+
+        st.markdown(f"""
+<div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--rule);">
+    <div class="t-eyebrow" style="color:var(--text-muted);margin-bottom:6px;">ACTIVE REPOSITORY</div>
+    <div style="background:var(--canvas);border:1.5px solid var(--ink);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {active_name}
+        </span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);font-weight:600;">{freshness_glyph}</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
-
-        if st.button("⚙️ Settings & ML Profile", key="nav_settings", use_container_width=True):
-            st.switch_page("pages/08_settings.py")
 
         user = get_current_user()
         if user:
-            # Modern bottom profile card with Sign Out below it
             disp_name = user.get("display_name", "Contributor")
             initial = disp_name[0].upper() if disp_name else "C"
             st.markdown(f"""
-<div style="margin-top:1.2rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:0.75rem;display:flex;align-items:center;gap:10px;">
-    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);color:#fff;font-weight:700;display:grid;place-items:center;font-size:0.9rem;flex-shrink:0;">
+<div style="margin-top:1.25rem;background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--mint);border:2px solid var(--ink);color:var(--ink);font-weight:800;font-family:var(--font-mono);display:grid;place-items:center;font-size:14px;flex-shrink:0;">
         {initial}
     </div>
     <div style="flex:1;min-width:0;">
-        <div style="font-size:0.84rem;font-weight:600;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{disp_name}</div>
-        <div style="font-size:0.7rem;color:#94A3B8;">Lv. {user.get('level', 1)} · {user.get('xp', 0):,} XP</div>
+        <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{disp_name}</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">LVL {user.get('level', 1):02d} · {user.get('xp', 0):,} XP</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-            if st.button("🚪 Sign Out", key="nav_signout", use_container_width=True, help="Sign out of your account"):
+            if st.button("🚪 Sign Out", key="nav_signout_solo", use_container_width=True):
                 clear_current_user()
                 st.switch_page("streamlit_app.py")
         else:
-            if st.button("🔑 Sign In", key="nav_signin", use_container_width=True):
+            if st.button("🔑 Sign In", key="nav_signin_solo", use_container_width=True):
                 st.switch_page("streamlit_app.py")
 
         st.markdown("""

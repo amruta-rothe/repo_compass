@@ -411,12 +411,16 @@ def get_cached_guide(repo_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def save_cached_guide(repo_id: str, guide_data: Dict[str, Any], model_name: str = "qwen3:4b") -> None:
+def save_cached_guide(repo_id: str, guide_data: Dict[str, Any], model_name: Optional[str] = None) -> None:
     """Persists guide into the database for instant subsequent loads."""
     from app.db.session import get_db
     from app.db.models import Guide
     import uuid
     from datetime import datetime, timezone
+    from app.core.config import get_settings
+
+    if model_name is None:
+        model_name = get_settings().ollama_model
 
     try:
         with get_db() as session:

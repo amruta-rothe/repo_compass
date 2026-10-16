@@ -1,0 +1,1931 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>RepoCompass 羅針盤 — 3D Sakura Trail Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Shippori+Mincho:wght@600;800&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0d1527;
+  --text: #EEF2FA;
+  --muted: #9aa9c4;
+  --panel: rgba(16, 25, 48, 0.88);
+  --panel-border: rgba(255, 255, 255, 0.16);
+  --red: #E63946;
+  --vermilion: #FF4D36;
+  --amber: #F59E0B;
+  --emerald: #10B981;
+  --teal: #14B8A6;
+  --blue: #3B82F6;
+  --purple: #8B5CF6;
+  --gold: #FCD34D;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #0d1527;
+  font-family: "Plus Jakarta Sans", "Zen Maru Gothic", system-ui, sans-serif;
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+#c {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+/* Atmospheric Overlay Gradient */
+#vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(circle at 50% 40%, transparent 45%, rgba(13, 21, 39, 0.65) 100%);
+}
+
+/* HUD Layers */
+.hud { position: fixed; z-index: 10; }
+
+/* Top Branding Bar */
+.brand {
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 8px 16px;
+  border-radius: 99px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--vermilion), var(--amber));
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  box-shadow: 0 0 16px rgba(255, 77, 54, 0.6);
+}
+.brand-title {
+  display: flex;
+  flex-direction: column;
+}
+.brand-title b {
+  font-family: "Shippori Mincho", serif;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  line-height: 1.2;
+}
+.brand-title span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Top Right Controls & Metrics */
+.top-right {
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.score-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid rgba(252, 211, 77, 0.35);
+  backdrop-filter: blur(16px);
+  padding: 8px 14px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  box-shadow: 0 0 20px rgba(252, 211, 77, 0.2);
+}
+.btn-hud {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px);
+  padding: 8px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.btn-hud:hover {
+  background: rgba(255,255,255,0.14);
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.3);
+}
+.btn-hud.sound-on { color: var(--emerald); border-color: rgba(16, 185, 129, 0.4); }
+
+.skip-btn {
+  background: linear-gradient(135deg, #ffffff, #f1f5f9);
+  color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 8px 18px;
+  border-radius: 99px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35), 0 0 15px rgba(255, 255, 255, 0.3);
+}
+.skip-btn:hover {
+  background: #ffffff;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 255, 255, 0.5);
+}
+.fade-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0d1527;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.45s ease-in-out;
+}
+.fade-overlay.fade-out {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Minimap */
+#mm-wrap {
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  right: calc(18px + env(safe-area-inset-right, 0px));
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px);
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+#mm-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  font-weight: 700;
+}
+#mm {
+  border-radius: 12px;
+  display: block;
+}
+
+/* Speedometer & Gear HUD */
+#speed-hud {
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: calc(18px + env(safe-area-inset-left, 0px));
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px);
+  padding: 10px 16px;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.speed-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.speed-unit {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.boost-bar {
+  width: 60px;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.boost-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--amber));
+  border-radius: 99px;
+  transition: width 0.1s;
+}
+
+/* Gate Approach Proximity Prompt */
+#gate-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(30px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 20;
+  text-align: center;
+}
+#gate-prompt.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.prompt-card {
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.95), rgba(139, 92, 246, 0.95));
+  border: 1px solid rgba(255,255,255,0.3);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px rgba(230, 57, 70, 0.5), 0 0 30px rgba(255, 77, 54, 0.4);
+  padding: 14px 28px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  animation: pulse-border 2s infinite;
+}
+@keyframes pulse-border {
+  0%, 100% { transform: scale(1); box-shadow: 0 16px 40px rgba(230, 57, 70, 0.5); }
+  50% { transform: scale(1.03); box-shadow: 0 20px 55px rgba(255, 77, 54, 0.75); }
+}
+.prompt-kanji {
+  width: 38px;
+  height: 38px;
+  background: #fff;
+  color: var(--ink);
+  font-family: "Shippori Mincho", serif;
+  font-weight: 800;
+  font-size: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+.prompt-text {
+  text-align: left;
+}
+.prompt-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.prompt-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
+}
+.prompt-btn {
+  background: #fff;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 12px;
+  padding: 7px 16px;
+  border-radius: 99px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Floating World Labels */
+.gate-label {
+  position: fixed;
+  z-index: 5;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -100%);
+  transition: opacity 0.2s;
+  will-change: transform;
+}
+.gate-label-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(13, 21, 39, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  padding: 4px 12px;
+  border-radius: 99px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+.gate-label-kanji {
+  font-family: "Shippori Mincho", serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--gold);
+}
+.gate-label-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.gate-label-dist {
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile Virtual Touch Controls */
+#touch-controls {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  display: none;
+}
+@media (pointer: coarse) {
+  #touch-controls { display: block; }
+}
+.touch-zone-left {
+  position: absolute;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: calc(20px + env(safe-area-inset-left, 0px));
+  width: 140px;
+  height: 140px;
+  pointer-events: auto;
+}
+#joystick-base {
+  width: 100%;
+  height: 100%;
+  background: rgba(16, 25, 48, 0.6);
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  position: relative;
+  backdrop-filter: blur(8px);
+}
+#joystick-thumb {
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(135deg, var(--teal), var(--blue));
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.5);
+  pointer-events: none;
+}
+.touch-zone-right {
+  position: absolute;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  display: grid;
+  grid-template-columns: 60px 60px;
+  grid-gap: 12px;
+  pointer-events: auto;
+}
+.t-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(16, 25, 48, 0.7);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  touch-action: none;
+}
+.t-btn:active {
+  transform: scale(0.92);
+  background: rgba(255,255,255,0.2);
+}
+.t-btn.gas {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(20, 184, 166, 0.8));
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.4);
+}
+.t-btn.brake {
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.8), rgba(255, 77, 54, 0.8));
+  border-color: rgba(230, 57, 70, 0.6);
+}
+.t-btn.boost {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.8), rgba(252, 211, 77, 0.8));
+  border-color: rgba(245, 158, 11, 0.6);
+  color: var(--ink);
+}
+
+/* Modals & Dialogs */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 15, 29, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.active {
+  display: flex;
+}
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-top: 4px solid var(--vermilion);
+  border-radius: 24px;
+  max-width: 580px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.modal-hanko {
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(135deg, var(--vermilion), #B91C1C);
+  color: #fff;
+  font-family: "Shippori Mincho", serif;
+  font-weight: 800;
+  font-size: 28px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4);
+  transform: rotate(-3deg);
+  flex-shrink: 0;
+}
+.modal-title h2 {
+  font-family: "Shippori Mincho", serif;
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.modal-title p {
+  margin: 3px 0 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.modal-body {
+  color: #d1d9e6;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.section-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+.sec-feat {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+}
+.sec-feat b {
+  display: block;
+  color: #fff;
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--panel-border);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--vermilion), var(--amber));
+  color: #fff;
+  border: none;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 11px 22px;
+  border-radius: 99px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(255, 77, 54, 0.35);
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(255, 77, 54, 0.5);
+}
+.btn-secondary {
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+/* Floating floating XP Toast */
+.xp-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(135deg, var(--gold), var(--amber));
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 16px;
+  padding: 8px 20px;
+  border-radius: 99px;
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 100;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.xp-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .brand-title span { display: none; }
+  .section-features { grid-template-columns: 1fr; }
+  #speed-hud { display: none; }
+  #mm-wrap { bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+}
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="3D Sakura Trail arcade interactive experience"></canvas>
+<div id="vignette"></div>
+
+<!-- Top Branding -->
+<div class="hud brand">
+  <div class="brand-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+    </svg>
+  </div>
+  <div class="brand-title">
+    <b>RepoCompass 羅針盤</b>
+    <span>3D Sakura Trail Arcade Navigator</span>
+  </div>
+</div>
+
+<!-- Top Right Tools -->
+<div class="hud top-right">
+  <button class="skip-btn" id="btn-skip-dash">Skip to Dashboard →</button>
+  <div class="score-badge" id="xp-counter">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    <span id="xp-val">0 XP</span>
+  </div>
+  <button class="btn-hud" id="btn-sound">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+    <span id="sfx-text">SFX: ON</span>
+  </button>
+  <button class="btn-hud" id="btn-gates">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>
+    </svg>
+    <span>Gates</span>
+  </button>
+  <button class="btn-hud" id="btn-help">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+    </svg>
+    <span>Help</span>
+  </button>
+</div>
+
+<!-- Floating World Gate Labels Container -->
+<div id="labels-container"></div>
+
+<!-- Bottom Left Speedometer -->
+<div class="hud" id="speed-hud">
+  <div>
+    <div class="speed-num" id="speed-val">0</div>
+    <div class="speed-unit">KM / H</div>
+  </div>
+  <div>
+    <div style="font-size: 9px; font-weight: 700; color: var(--muted); margin-bottom: 3px;">NITRO BOOST</div>
+    <div class="boost-bar"><div class="boost-fill" id="boost-meter"></div></div>
+  </div>
+</div>
+
+<!-- Minimap -->
+<div class="hud" id="mm-wrap">
+  <div id="mm-title">Sakura Map</div>
+  <canvas id="mm" width="110" height="150"></canvas>
+</div>
+
+<!-- Gate Proximity Interaction Prompt -->
+<div class="hud" id="gate-prompt">
+  <div class="prompt-card" id="prompt-card-action">
+    <div class="prompt-kanji" id="prompt-kanji">発</div>
+    <div class="prompt-text">
+      <div class="prompt-title" id="prompt-title">Explore & Ingest Gate</div>
+      <div class="prompt-sub" id="prompt-sub">Press [Enter] or Tap to Open</div>
+    </div>
+    <button class="prompt-btn">Enter →</button>
+  </div>
+</div>
+
+<!-- Mobile Touch Virtual Controls -->
+<div id="touch-controls">
+  <div class="touch-zone-left">
+    <div id="joystick-base">
+      <div id="joystick-thumb"></div>
+    </div>
+  </div>
+  <div class="touch-zone-right">
+    <div class="t-btn boost" id="btn-touch-boost">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:2px;">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      BOOST
+    </div>
+    <div class="t-btn gas" id="btn-touch-gas">DRIVE</div>
+    <div class="t-btn" id="btn-touch-enter">ENTER</div>
+    <div class="t-btn brake" id="btn-touch-brake">REV</div>
+  </div>
+</div>
+
+<!-- Gate Details Modal -->
+<div class="modal-overlay" id="gate-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-hanko" id="modal-kanji">発</div>
+      <div class="modal-title">
+        <h2 id="modal-title">Discover & Explore</h2>
+        <p id="modal-sub">Repository Ingestion & Dynamic 2D Workflow Engine</p>
+      </div>
+    </div>
+    <div class="modal-body" id="modal-content">
+      <!-- Injected dynamically -->
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modal-btn-close">Keep Driving (Esc)</button>
+      <button class="btn-primary" id="modal-btn-launch">Launch Section →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-hanko">操</div>
+      <div class="modal-title">
+        <h2>Arcade Driving Controls</h2>
+        <p>Drive the Cyber-Sakura Rover across the valley to enter any dashboard section</p>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="section-features">
+        <div class="sec-feat"><b>W / Up Arrow / Left Joystick</b>Drive forward & accelerate</div>
+        <div class="sec-feat"><b>S / Down Arrow</b>Reverse & brake</div>
+        <div class="sec-feat"><b>A / D / Steer Joystick</b>Steer left and right</div>
+        <div class="sec-feat"><b>Shift / Boost Button</b>Nitro boost (high speed drift)</div>
+        <div class="sec-feat"><b>Enter / Action Button</b>Enter Torii Gate when in range</div>
+        <div class="sec-feat"><b>Touch Screen</b>Virtual joystick & buttons on mobile</div>
+      </div>
+      <p style="font-size: 13px; color: var(--muted); margin-top: 10px; display:flex; align-items:center; gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+          <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>
+        </svg>
+        <span><b>Pro Tip:</b> Collect the floating golden XP Wisps along the path to earn bonus XP while you explore!</span>
+      </p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="help-btn-close">Got it! Let's Drive</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Fast Travel Modal -->
+<div class="modal-overlay" id="travel-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-hanko">門</div>
+      <div class="modal-title">
+        <h2>Fast Travel to Gate</h2>
+        <p>Instantly teleport your rover to any section gate</p>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="travel-gates-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="travel-btn-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ESC Pause & Exit Options Modal -->
+<div class="modal-overlay" id="esc-modal">
+  <div class="modal-card" style="max-width: 440px; text-align: center; border-top-color: #3B82F6;">
+    <div style="font-size: 36px; margin-bottom: 6px;">⏸️</div>
+    <div class="modal-title" style="margin-bottom: 8px;">
+      <h2 style="font-family: 'Poppins', sans-serif; font-size: 22px;">Game Paused</h2>
+      <p>Driving paused. Choose an option to continue:</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 18px;">
+      <button class="btn-primary" id="btn-esc-dashboard" style="width: 100%; justify-content: center;">
+        🧭 Skip to Dashboard →
+      </button>
+      <button class="btn-secondary" id="btn-esc-resume" style="width: 100%; justify-content: center;">
+        ▶️ Resume Exploration (ESC)
+      </button>
+      <button class="btn-secondary" id="btn-esc-signout" style="width: 100%; justify-content: center; border-color: rgba(239,68,68,0.4); color: #F87171;">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating XP Toast -->
+<div class="xp-toast" id="xp-toast">+25 XP Collected!</div>
+
+
+<!-- Three.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+/* ==========================================================================
+   RepoCompass — Sakura Trail 3D Arcade Engine
+   High-Fidelity Visuals, Procedural Texture Pack, Spatial Audio, 6 Dashboard Gates
+   ========================================================================== */
+
+const T = THREE;
+const $ = id => document.getElementById(id);
+
+// ─── 6 Dashboard Section Gates ─────────────────────────────────────────────
+const GATES = [
+  {
+    id: 'explore',
+    kanji: '発',
+    name: 'Discover & Explore',
+    subtitle: 'Repository Ingestion & 2D Workflow Engine',
+    x: 0,
+    z: -26,
+    color: '#10B981',
+    url: 'pages/03_explore.py',
+    features: [
+      { t: 'Dynamic 2D Workflow', d: 'Visual timeline custom-built for real package managers (Poetry, npm, Cargo).' },
+      { t: 'Deterministic Ranking', d: '6-factor scoring prioritizing good first issues and unassigned tasks.' },
+      { t: 'Grounded AI Summaries', d: 'Dual-engine local Qwen3 summary without hallucinations.' },
+      { t: 'Evidence Labels', d: 'Clear tags: Verified in Repo, Inferred, or Missing.' }
+    ],
+    desc: 'Input any public GitHub repository to extract build scripts, architecture summaries, and beginner-ready issues.'
+  },
+  {
+    id: 'learning',
+    kanji: '学',
+    name: 'Learning Loop',
+    subtitle: 'Code Trail & 5-Level Adaptive Hint Ladder',
+    x: 32,
+    z: -68,
+    color: '#3B82F6',
+    url: 'pages/04_learning.py',
+    features: [
+      { t: 'Issue-to-Code Trail', d: 'Direct trace from issue to files, symbols, and matching unit tests.' },
+      { t: '5-Level Hint Ladder', d: 'Progressive disclosure: Concept → Architecture → File → Symbol → Code Strategy.' },
+      { t: 'Profile-Calibrated', d: 'Hint depth customizes to beginner, intermediate, or advanced experience.' },
+      { t: 'Paired Unit Tests', d: 'Automatically spots test_*.py, *.spec.ts, and *_test.go.' }
+    ],
+    desc: 'Master the codebase through guided problem solving without spoiling the full solution.'
+  },
+  {
+    id: 'practice',
+    kanji: '修',
+    name: 'Practice Lab',
+    subtitle: 'Embedded Monaco IDE & Static AI Review',
+    x: -28,
+    z: -112,
+    color: '#8B5CF6',
+    url: 'pages/05_practice.py',
+    features: [
+      { t: 'Monaco IDE Editor', d: 'Full VS-dark editor with real syntax highlighting and inspection.' },
+      { t: 'Live Unified Diff', d: 'Instant side-by-side git diff calculation.' },
+      { t: 'Static AI Code Review', d: 'Heuristic & LLM review checking edge cases and style before committing.' },
+      { t: 'Zero-Trust Sandbox', d: 'Path traversal validator blocking ../ and secret leaks.' }
+    ],
+    desc: 'Draft proposed patches inside a protected sandbox and generate pull request templates.'
+  },
+  {
+    id: 'maintainer',
+    kanji: '理',
+    name: 'Maintainer Studio',
+    subtitle: 'Issue Quality Scoring & Starter Task Generator',
+    x: 24,
+    z: -156,
+    color: '#F59E0B',
+    url: 'pages/07_maintainer.py',
+    features: [
+      { t: 'Issue Quality Checklist', d: 'Audits reproduction steps, logs, and expected vs actual behavior.' },
+      { t: 'Needs-More-Info Triage', d: 'Automated polite follow-up comments requesting missing details.' },
+      { t: 'Starter Task Generator', d: 'Transforms difficult backlog tickets into bite-sized beginner tasks.' },
+      { t: 'Post-Merge Linker', d: 'Automatically recommends next logical tickets after a PR is merged.' }
+    ],
+    desc: 'Empowers open-source maintainers to reduce triage burnout and mentor new contributors.'
+  },
+  {
+    id: 'leaderboard',
+    kanji: '貢',
+    name: 'Hall of Fame',
+    subtitle: 'Verified XP, Streaks & Community Leaderboard',
+    x: -22,
+    z: -198,
+    color: '#EC4899',
+    url: 'pages/06_leaderboard.py',
+    features: [
+      { t: 'Idempotent XP Ledger', d: 'Guaranteed server-side validation preventing double-reward farming.' },
+      { t: 'Level Progression Curve', d: 'Dynamic skill ranking based on completed practice and PR milestones.' },
+      { t: 'Streaks & Badges', d: 'Reward continuous learning and good open-source citizenship.' },
+      { t: 'Opt-In Privacy', d: 'Full control over public leaderboard visibility.' }
+    ],
+    desc: 'Celebrate verified contributions and compete with fellow developers across universities and clubs.'
+  },
+  {
+    id: 'dashboard',
+    kanji: '盤',
+    name: 'Command Center',
+    subtitle: 'Personalized Contributor Hub & Skill Radar',
+    x: 10,
+    z: -240,
+    color: '#14B8A6',
+    url: 'pages/02_dashboard.py',
+    features: [
+      { t: 'Active Repositories', d: 'Instant one-click access to your analyzed projects and guides.' },
+      { t: 'Skill Radar Radar', d: 'Tracks experience growth across languages and frameworks.' },
+      { t: 'Next Challenge Match', d: 'Tailored recommendations matched to your recent achievements.' },
+      { t: 'Quick Action Launchers', d: 'Hop straight into your active practice tasks.' }
+    ],
+    desc: 'Your central command hub displaying all active learning trails, stats, and saved guides.'
+  }
+];
+
+// ─── Sound System (Web Audio API Synthesizer - 100% Offline) ────────────────
+class SoundFX {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+    this.engineGain = null;
+    this.engineOsc = null;
+  }
+  init() {
+    if (this.ctx) return;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    this.ctx = new AudioCtx();
+    
+    // Engine hum oscillator
+    try {
+      this.engineOsc = this.ctx.createOscillator();
+      this.engineOsc.type = 'sawtooth';
+      this.engineOsc.frequency.setValueAtTime(55, this.ctx.currentTime);
+      
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(260, this.ctx.currentTime);
+
+      this.engineGain = this.ctx.createGain();
+      this.engineGain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+
+      this.engineOsc.connect(filter);
+      filter.connect(this.engineGain);
+      this.engineGain.connect(this.ctx.destination);
+      this.engineOsc.start();
+    } catch(e) {}
+  }
+  updateEngine(speedRatio) {
+    if (!this.ctx || !this.enabled || !this.engineOsc) return;
+    const targetFreq = 48 + speedRatio * 85;
+    this.engineOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.1);
+  }
+  playCoin() {
+    if (!this.ctx || !this.enabled) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(587.33, this.ctx.currentTime); // D5
+    osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.14); // A5
+    gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.3);
+  }
+  playGong() {
+    if (!this.ctx || !this.enabled) return;
+    [130.81, 196.00, 261.63].forEach((f, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.25 / (idx + 1), this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 1.3);
+    });
+  }
+  toggle() {
+    this.enabled = !this.enabled;
+    if (this.engineGain) {
+      this.engineGain.gain.setValueAtTime(this.enabled ? 0.015 : 0.0001, this.ctx.currentTime);
+    }
+    return this.enabled;
+  }
+}
+const sfx = new SoundFX();
+
+// ─── Procedural Texture Generators (Zero Network Lag, High Fidelity) ─────────
+function createCobblestoneTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#423d47';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Draw irregular paving stones
+  for (let y = 0; y < 512; y += 32) {
+    const rowOffset = (y / 32) % 2 === 0 ? 0 : 24;
+    for (let x = -32; x < 544; x += 48) {
+      const px = x + rowOffset + (Math.sin(x + y) * 4);
+      const py = y + (Math.cos(x * y) * 3);
+      const tone = 90 + Math.floor(Math.sin(x * 12 + y * 8) * 20);
+      ctx.fillStyle = `rgb(${tone + 10}, ${tone + 6}, ${tone})`;
+      ctx.beginPath();
+      ctx.roundRect(px + 2, py + 2, 42, 28, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#27232b';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  }
+  const tex = new T.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = T.RepeatWrapping;
+  tex.repeat.set(8, 60);
+  return tex;
+}
+
+function createWaterRippleTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#10526e';
+  ctx.fillRect(0, 0, 256, 256);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 30; i++) {
+    const x = (i * 37) % 256;
+    const y = (i * 53) % 256;
+    ctx.beginPath();
+    ctx.arc(x, y, 16 + (i % 8) * 3, Math.PI * 0.2, Math.PI * 1.4);
+    ctx.stroke();
+  }
+  const tex = new T.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = T.RepeatWrapping;
+  tex.repeat.set(40, 3);
+  return tex;
+}
+
+function createGrassTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#3d6e52';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Micro grass noise
+  for (let i = 0; i < 2000; i++) {
+    const x = Math.random() * 256;
+    const y = Math.random() * 256;
+    const bright = Math.random() > 0.5;
+    ctx.fillStyle = bright ? 'rgba(84, 153, 114, 0.4)' : 'rgba(42, 79, 58, 0.4)';
+    ctx.fillRect(x, y, 2, 3);
+  }
+  const tex = new T.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = T.RepeatWrapping;
+  tex.repeat.set(50, 70);
+  return tex;
+}
+
+// ─── 3D Scene Initialization ───────────────────────────────────────────────
+const cv = $('c');
+const renderer = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = T.PCFSoftShadowMap;
+
+const scene = new T.Scene();
+// Atmospheric dusk pink & lavender fog
+scene.fog = new T.FogExp2(0xd6a2b8, 0.0095);
+
+const camera = new T.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.5, 450);
+
+// Ambient & Directional Lights
+const hemiLight = new T.HemisphereLight(0xffecd2, 0x4a4063, 0.85);
+scene.add(hemiLight);
+
+const sunLight = new T.DirectionalLight(0xffd5a5, 1.25);
+sunLight.position.set(-50, 70, -40);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 1024;
+sunLight.shadow.mapSize.height = 1024;
+sunLight.shadow.camera.near = 10;
+sunLight.shadow.camera.far = 280;
+sunLight.shadow.camera.left = -90;
+sunLight.shadow.camera.right = 90;
+sunLight.shadow.camera.top = 90;
+sunLight.shadow.camera.bottom = -90;
+scene.add(sunLight);
+
+// Ground Plane
+const grassTex = createGrassTexture();
+const groundGeo = new T.PlaneGeometry(600, 800);
+const groundMat = new T.MeshLambertMaterial({ map: grassTex, color: 0x86ba97 });
+const ground = new T.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// River
+const waterTex = createWaterRippleTexture();
+const riverMat = new T.MeshStandardMaterial({
+  map: waterTex,
+  color: 0x3b9eb8,
+  roughness: 0.15,
+  metalness: 0.4,
+  transparent: true,
+  opacity: 0.92
+});
+const river = new T.Mesh(new T.PlaneGeometry(600, 16), riverMat);
+river.rotation.x = -Math.PI / 2;
+river.position.set(0, 0.08, -50);
+scene.add(river);
+
+// River Banks
+[-58, -42].forEach(zPos => {
+  const bank = new T.Mesh(new T.BoxGeometry(600, 0.35, 1.2), new T.MeshLambertMaterial({ color: 0x5a7566 }));
+  bank.position.set(0, 0.15, zPos);
+  scene.add(bank);
+});
+
+// Main Stone Cobblestone Trail
+const roadTex = createCobblestoneTexture();
+const roadMat = new T.MeshStandardMaterial({ map: roadTex, roughness: 0.85 });
+const road = new T.Mesh(new T.PlaneGeometry(6.5, 320), roadMat);
+road.rotation.x = -Math.PI / 2;
+road.position.set(0, 0.04, -130);
+road.receiveShadow = true;
+scene.add(road);
+
+// Traditional Arched Japanese Drum Bridge (Taiko-bashi)
+function buildBridge(x, z) {
+  const bridge = new T.Group();
+  bridge.position.set(x, 0, z);
+
+  const woodMat = new T.MeshStandardMaterial({ color: 0xb45309, roughness: 0.7 });
+  const redMat = new T.MeshStandardMaterial({ color: 0xd8432f, roughness: 0.4 });
+
+  // Arched deck
+  const archDeck = new T.Mesh(new T.BoxGeometry(7, 0.6, 20), woodMat);
+  archDeck.position.set(0, 1.2, 0);
+  archDeck.castShadow = true;
+  bridge.add(archDeck);
+
+  // Red Railings
+  [-3.3, 3.3].forEach(s => {
+    const rail = new T.Mesh(new T.BoxGeometry(0.3, 1.4, 20), redMat);
+    rail.position.set(s, 2.1, 0);
+    rail.castShadow = true;
+    bridge.add(rail);
+
+    // Railing posts
+    for (let rz = -9; rz <= 9; rz += 4.5) {
+      const post = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 1.8, 8), redMat);
+      post.position.set(s, 2.2, rz);
+      bridge.add(post);
+      // Gold finial on post
+      const goldBall = new T.Mesh(new T.SphereGeometry(0.28, 8, 8), new T.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.2 }));
+      goldBall.position.set(s, 3.2, rz);
+      bridge.add(goldBall);
+    }
+  });
+
+  scene.add(bridge);
+}
+buildBridge(0, -50);
+
+// ─── Torii Gate Generator ──────────────────────────────────────────────────
+function buildToriiGate(gate) {
+  const group = new T.Group();
+  group.position.set(gate.x, 0, gate.z);
+
+  const vermilionMat = new T.MeshStandardMaterial({ color: 0xd83a2a, roughness: 0.35, metalness: 0.1 });
+  const darkWoodMat = new T.MeshStandardMaterial({ color: 0x1f1d2b, roughness: 0.6 });
+  const stoneMat = new T.MeshStandardMaterial({ color: 0x78716c, roughness: 0.9 });
+  const goldMat = new T.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2, metalness: 0.8 });
+
+  // Main Pillars
+  [-4.2, 4.2].forEach(px => {
+    // Stone base
+    const base = new T.Mesh(new T.CylinderGeometry(0.9, 1.05, 1.2, 12), stoneMat);
+    base.position.set(px, 0.6, 0);
+    base.castShadow = true;
+    group.add(base);
+
+    // Vermilion column
+    const col = new T.Mesh(new T.CylinderGeometry(0.62, 0.72, 8.5, 16), vermilionMat);
+    col.position.set(px, 5.0, 0);
+    col.castShadow = true;
+    group.add(col);
+  });
+
+  // Kasagi (Top curved beam)
+  const kasagi = new T.Mesh(new T.BoxGeometry(13.2, 0.85, 1.5), darkWoodMat);
+  kasagi.position.set(0, 9.5, 0);
+  kasagi.castShadow = true;
+  group.add(kasagi);
+
+  // Shimaki (Secondary top beam)
+  const shimaki = new T.Mesh(new T.BoxGeometry(11.4, 0.6, 1.0), vermilionMat);
+  shimaki.position.set(0, 8.8, 0);
+  shimaki.castShadow = true;
+  group.add(shimaki);
+
+  // Nuki (Tie beam)
+  const nuki = new T.Mesh(new T.BoxGeometry(10.2, 0.5, 0.75), vermilionMat);
+  nuki.position.set(0, 7.1, 0);
+  nuki.castShadow = true;
+  group.add(nuki);
+
+  // Gakuzuka (Center tablet) with Gate Kanji
+  const tablet = new T.Mesh(new T.BoxGeometry(1.6, 1.6, 0.5), goldMat);
+  tablet.position.set(0, 7.95, 0);
+  group.add(tablet);
+
+  // Hanging Lanterns (Chochin)
+  [-3.0, 3.0].forEach(lx => {
+    const lanternMat = new T.MeshStandardMaterial({ color: 0xffedd5, emissive: 0xf59e0b, emissiveIntensity: 0.7 });
+    const lantern = new T.Mesh(new T.CylinderGeometry(0.45, 0.45, 1.1, 10), lanternMat);
+    lantern.position.set(lx, 6.2, 0);
+    group.add(lantern);
+
+    // Warm Point Light
+    const pl = new T.PointLight(0xff9933, 1.6, 18);
+    pl.position.set(lx, 6.0, 0);
+    group.add(pl);
+  });
+
+  // Glowing Ground Portal Aura
+  const ringGeo = new T.RingGeometry(4.8, 5.6, 32);
+  const ringMat = new T.MeshBasicMaterial({ color: new T.Color(gate.color), side: T.DoubleSide, transparent: true, opacity: 0.65 });
+  const ring = new T.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(0, 0.06, 0);
+  group.add(ring);
+  gate.ringMesh = ring;
+
+  scene.add(group);
+}
+GATES.forEach(g => buildToriiGate(g));
+
+// ─── Sakura Cherry Blossom Trees ───────────────────────────────────────────
+function buildSakuraTree(x, z, scale = 1) {
+  const tree = new T.Group();
+  tree.position.set(x, 0, z);
+  tree.scale.setScalar(scale);
+
+  // Trunk
+  const trunkMat = new T.MeshStandardMaterial({ color: 0x4a322d, roughness: 0.9 });
+  const trunk = new T.Mesh(new T.CylinderGeometry(0.45, 0.8, 5.5, 8), trunkMat);
+  trunk.position.set(0, 2.7, 0);
+  trunk.castShadow = true;
+  tree.add(trunk);
+
+  // Blossom Canopies (Multi-layered organic spheres)
+  const pinkColors = [0xfbcfe8, 0xf472b6, 0xffe4e6, 0xf9a8d4];
+  const clusters = [
+    [0, 6.2, 0, 3.2],
+    [1.8, 5.5, 0.8, 2.4],
+    [-1.6, 5.8, -0.6, 2.5],
+    [0.6, 7.2, -1.0, 2.2],
+    [-0.8, 6.8, 1.2, 2.3]
+  ];
+  clusters.forEach(([cx, cy, cz, cr], i) => {
+    const mat = new T.MeshLambertMaterial({ color: pinkColors[i % pinkColors.length] });
+    const sphere = new T.Mesh(new T.IcosahedronGeometry(cr, 1), mat);
+    sphere.position.set(cx, cy, cz);
+    sphere.castShadow = true;
+    tree.add(sphere);
+  });
+
+  scene.add(tree);
+}
+
+// Plant 85 Sakura trees along the scenic valley
+let seed = 12345;
+const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let i = 0; i < 90; i++) {
+  const tx = (rng() - 0.5) * 220;
+  const tz = 25 - rng() * 300;
+  // Keep path & river clear
+  if (Math.abs(tx) < 7 && tz > -300) continue;
+  if (Math.abs(tz + 50) < 14) continue;
+  if (GATES.some(g => Math.hypot(g.x - tx, g.z - tz) < 14)) continue;
+  buildSakuraTree(tx, tz, 0.85 + rng() * 0.7);
+}
+
+// ─── Stone Lanterns (Toro) along the Road ──────────────────────────────────
+function buildStoneLantern(x, z) {
+  const toro = new T.Group();
+  toro.position.set(x, 0, z);
+  const stoneMat = new T.MeshLambertMaterial({ color: 0x9ca3af });
+  
+  // Base
+  const base = new T.Mesh(new T.CylinderGeometry(0.5, 0.65, 0.6, 6), stoneMat);
+  base.position.set(0, 0.3, 0);
+  toro.add(base);
+
+  // Stem
+  const stem = new T.Mesh(new T.CylinderGeometry(0.25, 0.3, 1.4, 6), stoneMat);
+  stem.position.set(0, 1.2, 0);
+  toro.add(stem);
+
+  // Light box
+  const boxMat = new T.MeshBasicMaterial({ color: 0xffedd5 });
+  const box = new T.Mesh(new T.BoxGeometry(0.7, 0.7, 0.7), boxMat);
+  box.position.set(0, 2.1, 0);
+  toro.add(box);
+
+  // Roof cap
+  const roof = new T.Mesh(new T.ConeGeometry(0.85, 0.5, 6), stoneMat);
+  roof.position.set(0, 2.7, 0);
+  toro.add(roof);
+
+  scene.add(toro);
+}
+for (let z = 10; z >= -270; z -= 30) {
+  buildStoneLantern(-4.8, z);
+  buildStoneLantern(4.8, z);
+}
+
+// ─── Floating XP Wisps (Collectible Game Crystals) ─────────────────────────
+const WISPS = [];
+for (let i = 0; i < 18; i++) {
+  const wz = -12 - i * 15;
+  const wx = Math.sin(i * 1.7) * 2.2;
+  const wGeo = new T.OctahedronGeometry(0.55, 0);
+  const wMat = new T.MeshStandardMaterial({
+    color: 0xf59e0b,
+    emissive: 0xfcd34d,
+    emissiveIntensity: 0.9,
+    metalness: 0.8,
+    roughness: 0.1
+  });
+  const mesh = new T.Mesh(wGeo, wMat);
+  mesh.position.set(wx, 1.4, wz);
+  scene.add(mesh);
+  WISPS.push({ mesh, x: wx, z: wz, collected: false });
+}
+
+// ─── Majestic Distant Mount Fuji ───────────────────────────────────────────
+const fuji = new T.Group();
+const fujiBase = new T.Mesh(new T.ConeGeometry(120, 110, 14), new T.MeshLambertMaterial({ color: 0x3d355c }));
+fujiBase.position.set(0, 50, 0);
+fuji.add(fujiBase);
+
+const fujiSnow = new T.Mesh(new T.ConeGeometry(42, 38, 14), new T.MeshLambertMaterial({ color: 0xffffff }));
+fujiSnow.position.set(0, 88, 0);
+fuji.add(fujiSnow);
+
+fuji.position.set(-60, 0, -380);
+scene.add(fuji);
+
+// ─── Cyber-Sakura Rover (High-Fidelity Vehicle) ─────────────────────────────
+const Rover = new T.Group();
+scene.add(Rover);
+Rover.position.set(0, 0, 5);
+
+// Sleek aerodynamic chassis
+const carPaintMat = new T.MeshStandardMaterial({
+  color: 0xff3b30,
+  roughness: 0.25,
+  metalness: 0.55
+});
+const chassis = new T.Mesh(new T.BoxGeometry(2.1, 0.75, 3.8), carPaintMat);
+chassis.position.set(0, 0.85, 0);
+chassis.castShadow = true;
+Rover.add(chassis);
+
+// Cabin glass cockpit (Tinted Obsidian Glass)
+const glassMat = new T.MeshStandardMaterial({
+  color: 0x111827,
+  roughness: 0.1,
+  metalness: 0.9,
+  transparent: true,
+  opacity: 0.85
+});
+const cabin = new T.Mesh(new T.BoxGeometry(1.6, 0.65, 2.0), glassMat);
+cabin.position.set(0, 1.4, -0.2);
+Rover.add(cabin);
+
+// Dual Neon Headlights
+const hlMat = new T.MeshBasicMaterial({ color: 0xffffff });
+[-0.75, 0.75].forEach(hx => {
+  const hl = new T.Mesh(new T.SphereGeometry(0.18, 10, 10), hlMat);
+  hl.position.set(hx, 0.85, -1.9);
+  Rover.add(hl);
+
+  // SpotLight beam penetrating fog
+  const spot = new T.SpotLight(0xfff5e6, 2.5, 35, Math.PI / 5, 0.4);
+  spot.position.set(hx, 0.85, -1.9);
+  spot.target.position.set(hx, 0.1, -22);
+  Rover.add(spot);
+  Rover.add(spot.target);
+});
+
+// Taillights
+const tlMat = new T.MeshBasicMaterial({ color: 0xff1744 });
+[-0.8, 0.8].forEach(tx => {
+  const tl = new T.Mesh(new T.BoxGeometry(0.35, 0.12, 0.1), tlMat);
+  tl.position.set(tx, 0.9, 1.9);
+  Rover.add(tl);
+});
+
+// 4 Detailed Wheels
+const WHEELS = [];
+const tireMat = new T.MeshStandardMaterial({ color: 0x18181b, roughness: 0.85 });
+const rimMat = new T.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.85, roughness: 0.2 });
+
+[[-1.15, -1.2], [1.15, -1.2], [-1.15, 1.2], [1.15, 1.2]].forEach(([wx, wz]) => {
+  const wheelGroup = new T.Group();
+  wheelGroup.position.set(wx, 0.5, wz);
+
+  const tire = new T.Mesh(new T.CylinderGeometry(0.5, 0.5, 0.4, 16), tireMat);
+  tire.rotation.z = Math.PI / 2;
+  tire.castShadow = true;
+  wheelGroup.add(tire);
+
+  const rim = new T.Mesh(new T.CylinderGeometry(0.3, 0.3, 0.42, 12), rimMat);
+  rim.rotation.z = Math.PI / 2;
+  wheelGroup.add(rim);
+
+  Rover.add(wheelGroup);
+  WHEELS.push(wheelGroup);
+});
+
+// Ground shadow disc under car
+const shadowGeo = new T.PlaneGeometry(3.2, 4.8);
+const shadowMat = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4 });
+const shadowDisc = new T.Mesh(shadowGeo, shadowMat);
+shadowDisc.rotation.x = -Math.PI / 2;
+shadowDisc.position.set(0, 0.05, 0);
+Rover.add(shadowDisc);
+
+// ─── Sakura Blossom Floating Petal System (600 Particles) ──────────────────
+const PETAL_COUNT = 650;
+const petalGeo = new T.BufferGeometry();
+const petalPos = new Float32Array(PETAL_COUNT * 3);
+for (let i = 0; i < PETAL_COUNT; i++) {
+  petalPos[i * 3] = (rng() - 0.5) * 160;
+  petalPos[i * 3 + 1] = rng() * 32;
+  petalPos[i * 3 + 2] = (rng() - 0.5) * 260 - 100;
+}
+petalGeo.setAttribute('position', new T.BufferAttribute(petalPos, 3));
+const petalMat = new T.PointsMaterial({
+  color: 0xfbcfe8,
+  size: 0.65,
+  transparent: true,
+  opacity: 0.88
+});
+const petalParticles = new T.Points(petalGeo, petalMat);
+scene.add(petalParticles);
+
+// ─── Input & Driving Physics Engine ────────────────────────────────────────
+const KEYS = {};
+let heading = 0;
+let velocity = 0;
+let userXP = 0;
+let nitroBoost = 100;
+let activeGate = -1;
+let isModalOpen = false;
+
+window.addEventListener('keydown', e => {
+  KEYS[e.key.toLowerCase()] = true;
+  sfx.init();
+
+  if (e.key === 'Enter' && activeGate >= 0 && !isModalOpen) {
+    openGateModal(activeGate);
+  }
+  if (e.key === 'Escape') {
+    if (isModalOpen) {
+      closeAllModals();
+    } else {
+      const escM = $('esc-modal');
+      if (escM) {
+        escM.classList.add('active');
+        isModalOpen = true;
+      }
+    }
+  }
+});
+window.addEventListener('keyup', e => {
+  KEYS[e.key.toLowerCase()] = false;
+});
+
+// ─── Mobile Touch Joystick & Buttons Handling ──────────────────────────────
+let joystickActive = false;
+let joySteer = 0;
+let joyThrottle = 0;
+const joyBase = $('joystick-base');
+const joyThumb = $('joystick-thumb');
+
+if (joyBase) {
+  function handleJoy(e) {
+    sfx.init();
+    const touch = e.touches ? e.touches[0] : e;
+    const rect = joyBase.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = touch.clientX - cx;
+    let dy = touch.clientY - cy;
+    const dist = Math.hypot(dx, dy);
+    const maxR = rect.width / 2;
+
+    if (dist > maxR) {
+      dx = (dx / dist) * maxR;
+      dy = (dy / dist) * maxR;
+    }
+    joyThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    joySteer = -dx / maxR;
+    joyThrottle = -dy / maxR;
+  }
+  joyBase.addEventListener('pointerdown', e => { joystickActive = true; handleJoy(e); });
+  window.addEventListener('pointermove', e => { if (joystickActive) handleJoy(e); });
+  window.addEventListener('pointerup', () => {
+    joystickActive = false;
+    joySteer = 0;
+    joyThrottle = 0;
+    joyThumb.style.transform = 'translate(-50%, -50%)';
+  });
+}
+
+// Touch buttons
+let touchGas = false, touchBrake = false, touchBoost = false;
+const btnGas = $('btn-touch-gas');
+const btnBrake = $('btn-touch-brake');
+const btnBoost = $('btn-touch-boost');
+const btnEnter = $('btn-touch-enter');
+
+if (btnGas) {
+  btnGas.addEventListener('pointerdown', () => { sfx.init(); touchGas = true; });
+  btnGas.addEventListener('pointerup', () => touchGas = false);
+  btnBrake.addEventListener('pointerdown', () => { sfx.init(); touchBrake = true; });
+  btnBrake.addEventListener('pointerup', () => touchBrake = false);
+  btnBoost.addEventListener('pointerdown', () => { sfx.init(); touchBoost = true; });
+  btnBoost.addEventListener('pointerup', () => touchBoost = false);
+  btnEnter.addEventListener('click', () => {
+    if (activeGate >= 0) openGateModal(activeGate);
+  });
+}
+
+// ─── Floating World Labels Generator ───────────────────────────────────────
+const labelsContainer = $('labels-container');
+GATES.forEach((g, idx) => {
+  const el = document.createElement('div');
+  el.className = 'gate-label';
+  el.id = `gate-label-${idx}`;
+  el.innerHTML = `
+    <div class="gate-label-badge">
+      <span class="gate-label-kanji">${g.kanji}</span>
+      <span class="gate-label-name">${g.name}</span>
+      <span class="gate-label-dist" id="dist-${idx}">0m</span>
+    </div>
+  `;
+  labelsContainer.appendChild(el);
+});
+
+// ─── Modal & UI Interactions ───────────────────────────────────────────────
+function openGateModal(gateIdx) {
+  isModalOpen = true;
+  sfx.playGong();
+  const gate = GATES[gateIdx];
+
+  $('modal-kanji').textContent = gate.kanji;
+  $('modal-kanji').style.background = `linear-gradient(135deg, ${gate.color}, #991b1b)`;
+  $('modal-title').textContent = gate.name;
+  $('modal-sub').textContent = gate.subtitle;
+
+  $('modal-content').innerHTML = `
+    <p>${gate.desc}</p>
+    <div class="section-features">
+      ${gate.features.map(f => `<div class="sec-feat"><b>${f.t}</b>${f.d}</div>`).join('')}
+    </div>
+    <div style="margin-top: 14px; font-size: 13px; color: var(--muted); background: rgba(255,255,255,0.03); padding: 10px 14px; border-radius: 10px;">
+      <b>Target Page:</b> <code>${gate.url}</code>
+    </div>
+  `;
+
+  $('modal-btn-launch').onclick = () => {
+    const pageName = gate.url.replace('pages/', '').replace('.py', '');
+    exitToUrl(`/${pageName}`);
+  };
+
+  $('gate-modal').classList.add('active');
+}
+
+function sendActionToStreamlit(actionName) {
+  // 1. Native Streamlit component postMessage protocol
+  try {
+    window.parent.postMessage({
+      isStreamlitMessage: true,
+      type: "streamlit:setComponentValue",
+      value: actionName
+    }, "*");
+  } catch(e) {}
+
+  // 2. Direct top navigation fallback
+  try {
+    if (window.top && window.top !== window) {
+      if (actionName === 'dashboard') {
+        window.top.location.href = window.top.location.origin + '/02_dashboard';
+      } else if (actionName === 'signout') {
+        window.top.location.search = '?game_action=signout';
+      } else if (actionName.startsWith('gate:')) {
+        const pName = actionName.replace('gate:pages/', '').replace('.py', '');
+        window.top.location.href = window.top.location.origin + '/' + pName;
+      }
+    }
+  } catch(e) {}
+}
+
+function exitToUrl(targetUrl) {
+  const overlay = $('fade-overlay');
+  if (overlay) overlay.classList.add('fade-out');
+  setTimeout(() => {
+    sendActionToStreamlit('gate:' + targetUrl);
+  }, 250);
+}
+
+function exitToDashboard() {
+  const overlay = $('fade-overlay');
+  if (overlay) overlay.classList.add('fade-out');
+  setTimeout(() => {
+    sendActionToStreamlit('dashboard');
+  }, 250);
+}
+
+function exitToSignOut() {
+  const overlay = $('fade-overlay');
+  if (overlay) overlay.classList.add('fade-out');
+  setTimeout(() => {
+    sendActionToStreamlit('signout');
+  }, 250);
+}
+
+const skipDashBtn = $('btn-skip-dash');
+if (skipDashBtn) {
+  skipDashBtn.onclick = exitToDashboard;
+}
+
+const btnEscDash = $('btn-esc-dashboard');
+if (btnEscDash) {
+  btnEscDash.onclick = exitToDashboard;
+}
+
+const btnEscResume = $('btn-esc-resume');
+if (btnEscResume) {
+  btnEscResume.onclick = closeAllModals;
+}
+
+const btnEscSignOut = $('btn-esc-signout');
+if (btnEscSignOut) {
+  btnEscSignOut.onclick = exitToSignOut;
+}
+
+function closeAllModals() {
+  isModalOpen = false;
+  $('gate-modal').classList.remove('active');
+  $('help-modal').classList.remove('active');
+  $('travel-modal').classList.remove('active');
+  const escM = $('esc-modal');
+  if (escM) escM.classList.remove('active');
+}
+
+$('modal-btn-close').onclick = closeAllModals;
+$('help-btn-close').onclick = closeAllModals;
+$('travel-btn-close').onclick = closeAllModals;
+
+$('btn-help').onclick = () => { $('help-modal').classList.add('active'); isModalOpen = true; };
+$('btn-gates').onclick = () => {
+  $('travel-gates-list').innerHTML = GATES.map((g, i) => `
+    <button class="btn-secondary" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:12px 18px;" onclick="teleportToGate(${i})">
+      <span><b>${g.kanji} ${g.name}</b> <small style="color:var(--muted);">${g.subtitle}</small></span>
+      <span>Teleport →</span>
+    </button>
+  `).join('');
+  $('travel-modal').classList.add('active');
+  isModalOpen = true;
+};
+
+window.teleportToGate = function(idx) {
+  const g = GATES[idx];
+  Rover.position.set(g.x, 0, g.z + 10);
+  heading = 0;
+  velocity = 0;
+  closeAllModals();
+  sfx.playGong();
+};
+
+$('btn-sound').onclick = () => {
+  sfx.init();
+  const on = sfx.toggle();
+  const sfxText = $('sfx-text');
+  if (sfxText) sfxText.textContent = on ? 'SFX: ON' : 'SFX: OFF';
+  $('btn-sound').classList.toggle('sound-on', on);
+};
+
+$('prompt-card-action').onclick = () => {
+  if (activeGate >= 0) openGateModal(activeGate);
+};
+
+function showXPToast(amount) {
+  userXP += amount;
+  const xpVal = $('xp-val');
+  if (xpVal) xpVal.textContent = `${userXP} XP`;
+  const toast = $('xp-toast');
+  toast.textContent = `+${amount} XP Collected!`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// ─── Minimap Canvas ────────────────────────────────────────────────────────
+const mmCanvas = $('mm');
+const mmCtx = mmCanvas.getContext('2d');
+
+function updateMinimap(px, pz) {
+  mmCtx.clearRect(0, 0, 110, 150);
+  const mx = x => 55 + x * 0.9;
+  const mz = z => 140 + z * 0.45;
+
+  // River on map
+  mmCtx.strokeStyle = '#38bdf8';
+  mmCtx.lineWidth = 4;
+  mmCtx.beginPath();
+  mmCtx.moveTo(0, mz(-50));
+  mmCtx.lineTo(110, mz(-50));
+  mmCtx.stroke();
+
+  // Trail
+  mmCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  mmCtx.lineWidth = 2;
+  mmCtx.beginPath();
+  mmCtx.moveTo(mx(0), mz(10));
+  GATES.forEach(g => mmCtx.lineTo(mx(g.x), mz(g.z)));
+  mmCtx.stroke();
+
+  // Gates
+  GATES.forEach(g => {
+    mmCtx.fillStyle = g.color;
+    mmCtx.beginPath();
+    mmCtx.arc(mx(g.x), mz(g.z), 4, 0, Math.PI * 2);
+    mmCtx.fill();
+  });
+
+  // Rover arrow
+  mmCtx.save();
+  mmCtx.translate(mx(px), mz(pz));
+  mmCtx.rotate(-heading);
+  mmCtx.fillStyle = '#ff3b30';
+  mmCtx.beginPath();
+  mmCtx.moveTo(0, -5);
+  mmCtx.lineTo(4, 4);
+  mmCtx.lineTo(-4, 4);
+  mmCtx.fill();
+  mmCtx.restore();
+}
+
+// ─── Main Animation & Game Loop ─────────────────────────────────────────────
+const tempVec = new T.Vector3();
+let lastTime = performance.now();
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+
+  // 1. Driving Physics
+  if (!isModalOpen) {
+    let throttle = 0;
+    if (KEYS.w || KEYS.arrowup || touchGas) throttle += 1;
+    if (KEYS.s || KEYS.arrowdown || touchBrake) throttle -= 0.65;
+    if (joystickActive) throttle += joyThrottle;
+
+    let steer = 0;
+    if (KEYS.a || KEYS.arrowleft) steer += 1;
+    if (KEYS.d || KEYS.arrowright) steer -= 1;
+    if (joystickActive) steer += joySteer;
+
+    const isBoosting = (KEYS.shift || touchBoost) && nitroBoost > 0;
+    const maxSpeed = isBoosting ? 38 : 22;
+    if (isBoosting) nitroBoost = Math.max(0, nitroBoost - dt * 25);
+    else nitroBoost = Math.min(100, nitroBoost + dt * 15);
+    $('boost-meter').style.width = `${nitroBoost}%`;
+
+    // Accelerate & steer
+    velocity += (throttle * maxSpeed - velocity) * Math.min(1, dt * 3.2);
+    heading += steer * dt * 2.2 * Math.min(1, Math.abs(velocity) / 5) * (velocity < 0 ? -1 : 1);
+
+    Rover.rotation.y = heading;
+    Rover.position.x -= Math.sin(heading) * velocity * dt;
+    Rover.position.z -= Math.cos(heading) * velocity * dt;
+
+    // Slight chassis roll when steering
+    chassis.rotation.z = -steer * 0.08 * (Math.abs(velocity) / 20);
+
+    // Wheel spin
+    WHEELS.forEach(w => w.rotation.x -= velocity * dt * 2.5);
+
+    // Audio RPM update
+    sfx.updateEngine(Math.abs(velocity) / maxSpeed);
+
+    // Speedometer
+    const speedKmh = Math.floor(Math.abs(velocity) * 2.8);
+    $('speed-val').textContent = speedKmh;
+  }
+
+  const px = Rover.position.x;
+  const pz = Rover.position.z;
+
+  // 2. Camera Follow Lerp
+  tempVec.set(px + Math.sin(heading) * 11, 6.5, pz + Math.cos(heading) * 11);
+  camera.position.lerp(tempVec, Math.min(1, dt * 4.5));
+  camera.lookAt(px - Math.sin(heading) * 4, 1.8, pz - Math.cos(heading) * 4);
+
+  // 3. Water Ripple Animation
+  waterTex.offset.x += dt * 0.05;
+
+  // 4. Sakura Petals Floating Animation
+  const pArray = petalGeo.attributes.position.array;
+  for (let i = 0; i < PETAL_COUNT; i++) {
+    pArray[i * 3 + 1] -= dt * 1.6;
+    pArray[i * 3] += Math.sin(now / 900 + i) * dt * 0.9;
+    if (pArray[i * 3 + 1] < 0) {
+      pArray[i * 3 + 1] = 30;
+      pArray[i * 3] = px + (rng() - 0.5) * 120;
+      pArray[i * 3 + 2] = pz + (rng() - 0.5) * 140;
+    }
+  }
+  petalGeo.attributes.position.needsUpdate = true;
+
+  // 5. XP Wisps Rotation & Collision Detection
+  WISPS.forEach(w => {
+    if (!w.collected) {
+      w.mesh.rotation.y += dt * 2.2;
+      w.mesh.position.y = 1.4 + Math.sin(now / 400 + w.z) * 0.25;
+      if (Math.hypot(w.x - px, w.z - pz) < 2.2) {
+        w.collected = true;
+        scene.remove(w.mesh);
+        sfx.playCoin();
+        showXPToast(25);
+      }
+    }
+  });
+
+  // 6. Torii Gate Proximity Detection & Screen Labels Projection
+  let closestDist = 999;
+  let closestGate = -1;
+
+  GATES.forEach((g, idx) => {
+    const dist = Math.hypot(g.x - px, g.z - pz);
+    if (dist < closestDist) {
+      closestDist = dist;
+      closestGate = idx;
+    }
+
+    // Pulse gate portal ring
+    if (g.ringMesh) {
+      g.ringMesh.scale.setScalar(1 + Math.sin(now / 300 + idx) * 0.05);
+    }
+
+    // Project world coordinates to 2D screen coordinates
+    tempVec.set(g.x, 10.5, g.z).project(camera);
+    const labelEl = $(`gate-label-${idx}`);
+    if (labelEl) {
+      if (tempVec.z < 1 && dist < 120) {
+        labelEl.style.display = 'block';
+        labelEl.style.left = `${(tempVec.x * 0.5 + 0.5) * window.innerWidth}px`;
+        labelEl.style.top = `${(-tempVec.y * 0.5 + 0.5) * window.innerHeight}px`;
+        $(`dist-${idx}`).textContent = `${Math.round(dist)}m`;
+      } else {
+        labelEl.style.display = 'none';
+      }
+    }
+  });
+
+  // Gate Arrival Prompt
+  if (closestDist < 12 && closestGate >= 0) {
+    activeGate = closestGate;
+    const g = GATES[activeGate];
+    $('prompt-kanji').textContent = g.kanji;
+    $('prompt-title').textContent = `${g.name} Gate`;
+    $('prompt-sub').textContent = 'Press [Enter] or Tap to Open';
+    $('gate-prompt').classList.add('visible');
+  } else {
+    activeGate = -1;
+    $('gate-prompt').classList.remove('visible');
+  }
+
+  // 7. Update Minimap
+  updateMinimap(px, pz);
+
+  // Render Scene
+  renderer.render(scene, camera);
+}
+
+// ─── Responsive Window Resize ──────────────────────────────────────────────
+function onResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// Start Animation Loop
+requestAnimationFrame(animate);
+</script>
+<div id="fade-overlay" class="fade-overlay"></div>
+</body>
+</html>

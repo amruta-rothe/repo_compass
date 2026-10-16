@@ -6,6 +6,7 @@ structured-output validation and graceful fallback when Ollama is unavailable.
 from __future__ import annotations
 
 import json
+import logging
 import time
 from typing import Any, Dict, Generator, Optional
 
@@ -14,6 +15,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 from app.core.config import get_settings
 
+logger = logging.getLogger(__name__)
+
 
 class LLMUnavailableError(Exception):
     pass
@@ -21,6 +24,12 @@ class LLMUnavailableError(Exception):
 
 class LLMOutputError(Exception):
     pass
+
+
+# ─── Last-call telemetry ────────────────────────────────────────────────────
+# Populated after every successful generation so the Settings page can show the
+# real per-call cost (load / prefill / decode) instead of guessing.
+last_llm_stats: Dict[str, Any] = {}
 
 
 def _base_url() -> str:
@@ -35,10 +44,68 @@ def _timeout() -> int:
     return get_settings().model_timeout_seconds
 
 
-def check_ollama_available() -> bool:
-    """Quick liveness check."""
+def _record_stats(data: Dict[str, Any], model: str) -> None:
+    """Extract Ollama's own timing counters so optimisation is evidence-driven."""
+    eval_count = data.get("eval_count") or 0
+    eval_ns = data.get("eval_duration") or 0
+    stats = {
+        "model": model,
+        "load_ms": round((data.get("load_duration") or 0) / 1e6, 1),
+        "prompt_tokens": data.get("prompt_eval_count") or 0,
+        "prompt_ms": round((data.get("prompt_eval_duration") or 0) / 1e6, 1),
+        "eval_tokens": eval_count,
+        "eval_ms": round(eval_ns / 1e6, 1),
+        "tok_per_s": round(eval_count / (eval_ns / 1e9), 1) if eval_ns else 0.0,
+        "total_ms": round((data.get("total_duration") or 0) / 1e6, 1),
+        "at": time.time(),
+    }
+    last_llm_stats.clear()
+    last_llm_stats.update(stats)
+    logger.info("ollama call %s", stats)
+
+
+# ─── Availability probe (short TTL cache) ───────────────────────────────────
+_AVAIL_TTL_SECONDS = 30.0
+_avail_cache: Dict[str, Any] = {"t": 0.0, "ok": False}
+
+
+def reset_ollama_cache() -> None:
+    """Force the next availability probe to actually hit Ollama."""
+    _avail_cache["t"] = 0.0
+    _avail_cache["ok"] = False
+
+
+def check_ollama_available(ttl: float = _AVAIL_TTL_SECONDS) -> bool:
+    """
+    Quick liveness check, memoised for a few seconds.
+
+    Called on nearly every page render; without the TTL cache each call costs a
+    round-trip (and up to a 5s wait when Ollama is down).
+    """
+    now = time.time()
+    if _avail_cache["t"] and (now - _avail_cache["t"]) < ttl:
+        return bool(_avail_cache["ok"])
     try:
         resp = httpx.get(f"{_base_url()}/api/tags", timeout=5.0)
+        ok = resp.status_code == 200
+    except Exception:
+        ok = False
+    _avail_cache["t"] = now
+    _avail_cache["ok"] = ok
+    return ok
+
+
+def warm_up_model() -> bool:
+    """
+    Load the model into memory once so the first real request doesn't pay the
+    cold-start `load_duration`. An empty prompt asks Ollama to load the model.
+    """
+    try:
+        resp = httpx.post(
+            f"{_base_url()}/api/generate",
+            json={"model": _model(), "keep_alive": get_settings().ollama_keep_alive},
+            timeout=60.0,
+        )
         return resp.status_code == 200
     except Exception:
         return False
@@ -54,6 +121,48 @@ def list_available_models() -> list[str]:
 
 
 import re
+
+
+def _build_payload(
+    prompt: str,
+    system: Optional[str],
+    temperature: float,
+    max_tokens: int,
+    stream: bool,
+    format: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Single source of truth for the /api/generate payload.
+
+    Bounded options keep CPU inference fast:
+      * num_ctx      -- small context window
+      * num_predict  -- hard cap on generated tokens
+      * think: false -- skip the reasoning trace (a thinking trace is billed
+                        against num_predict and starves the actual answer)
+      * keep_alive   -- keep the model resident instead of reloading it each call
+    """
+    settings = get_settings()
+    payload: Dict[str, Any] = {
+        "model": _model(),
+        "prompt": prompt,
+        "stream": stream,
+        "keep_alive": settings.ollama_keep_alive,
+        "options": {
+            "temperature": temperature,
+            "num_predict": min(max_tokens, 350),
+            "num_ctx": 1536,
+            "top_k": 20,
+            "top_p": 0.8,
+        },
+    }
+    if settings.ollama_disable_thinking:
+        payload["think"] = False
+    if format:
+        payload["format"] = format
+    if system:
+        payload["system"] = system
+    return payload
+
 
 @retry(
     stop=stop_after_attempt(2),
@@ -72,26 +181,7 @@ def generate(
     Call Ollama /api/generate. Returns full response text.
     Raises LLMUnavailableError if Ollama is not reachable.
     """
-    # Optimized options for fast local Ollama inference on CPU & GPU:
-    # 1. num_ctx: 1536 (bounds context window, preventing CPU context overflow)
-    # 2. num_predict: capped to 350 tokens (eliminates runaway generation)
-    # 3. top_k & top_p: fast sampling
-    payload: Dict[str, Any] = {
-        "model": _model(),
-        "prompt": prompt,
-        "stream": False,
-        "options": {
-            "temperature": temperature,
-            "num_predict": min(max_tokens, 350),
-            "num_ctx": 1536,
-            "top_k": 20,
-            "top_p": 0.8,
-        },
-    }
-    if format:
-        payload["format"] = format
-    if system:
-        payload["system"] = system
+    payload = _build_payload(prompt, system, temperature, max_tokens, stream=False, format=format)
 
     try:
         resp = httpx.post(
@@ -101,7 +191,51 @@ def generate(
         )
         resp.raise_for_status()
         data = resp.json()
+        _record_stats(data, payload["model"])
         return data.get("response", "").strip()
+    except httpx.ConnectError:
+        raise LLMUnavailableError(
+            "Ollama is not running. Start it with `ollama serve` and ensure the model is pulled."
+        )
+    except httpx.TimeoutException:
+        raise LLMUnavailableError(f"Ollama timed out after {_timeout()} seconds.")
+
+
+def generate_stream(
+    prompt: str,
+    system: Optional[str] = None,
+    temperature: float = 0.3,
+    max_tokens: int = 350,
+) -> Generator[str, None, None]:
+    """
+    Stream a plain-text completion chunk-by-chunk for a responsive UI.
+
+    Use this for text outputs only (hints, reviews). Never stream JSON: a
+    partially-received JSON object cannot be parsed or rendered.
+    """
+    payload = _build_payload(prompt, system, temperature, max_tokens, stream=True)
+
+    try:
+        with httpx.stream(
+            "POST",
+            f"{_base_url()}/api/generate",
+            json=payload,
+            timeout=_timeout(),
+        ) as resp:
+            resp.raise_for_status()
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if chunk.get("error"):
+                    raise LLMUnavailableError(str(chunk["error"]))
+                if chunk.get("response"):
+                    yield chunk["response"]
+                if chunk.get("done"):
+                    _record_stats(chunk, payload["model"])
     except httpx.ConnectError:
         raise LLMUnavailableError(
             "Ollama is not running. Start it with `ollama serve` and ensure the model is pulled."

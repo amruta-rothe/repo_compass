@@ -34,8 +34,16 @@ class Settings(BaseSettings):
 
     # Ollama / AI
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:4b"
-    model_timeout_seconds: int = 120
+    # NOTE: `qwen3:4b` is a thinking-only model in Ollama -- it ignores `think: false`,
+    # so it burns the token budget on a reasoning trace and is both slow and unreliable
+    # for structured JSON. `qwen3:4b-instruct` is the non-thinking variant (~4x faster).
+    ollama_model: str = "qwen3:4b-instruct"
+    # Send `think: false` on every request. Harmless for non-thinking models and it
+    # protects the JSON path if the model is later switched to a hybrid one.
+    ollama_disable_thinking: bool = True
+    # Keep the model resident in RAM between calls to avoid cold reload costs.
+    ollama_keep_alive: str = "30m"
+    model_timeout_seconds: int = 45
     model_max_retries: int = 2
 
     # Ingestion limits

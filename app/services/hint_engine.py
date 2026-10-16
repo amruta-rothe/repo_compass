@@ -16,7 +16,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from app.services.llm_service import (
-    generate, build_hint_prompt, SYSTEM_PROMPT,
+    generate, generate_stream, build_hint_prompt, SYSTEM_PROMPT,
     check_ollama_available, LLMUnavailableError,
 )
 
@@ -160,3 +160,56 @@ def generate_adaptive_hint(
         pass
 
     return grounded_hint
+
+
+def stream_adaptive_hint(
+    issue: Dict[str, Any],
+    hint_level: int,
+    relevant_files: List[str],
+    exp_level: str = "beginner",
+    repo_data: Optional[Dict[str, Any]] = None,
+):
+    """
+    Yield the hint progressively so the UI can render it as it is generated.
+
+    Falls back to the deterministic grounded hint when Ollama is unavailable or
+    produces nothing useful. Same content contract as `generate_adaptive_hint`,
+    just streamed.
+    """
+    hint_level = max(1, min(5, hint_level))
+    grounded_hint = _generate_grounded_hint(
+        issue=issue,
+        hint_level=hint_level,
+        relevant_files=relevant_files,
+        exp_level=exp_level,
+        repo_data=repo_data,
+    )
+
+    if not check_ollama_available():
+        yield grounded_hint
+        return
+
+    prompt = build_hint_prompt(
+        issue_title=issue.get("title", ""),
+        issue_body=issue.get("body", ""),
+        hint_level=hint_level,
+        relevant_files=relevant_files,
+        experience_level=exp_level,
+    )
+
+    collected: List[str] = []
+    try:
+        for chunk in generate_stream(
+            prompt,
+            system=SYSTEM_PROMPT,
+            temperature=0.2,
+            max_tokens=250,
+        ):
+            collected.append(chunk)
+            yield chunk
+    except Exception:
+        pass
+
+    # If the model produced nothing usable, fall back to grounded guidance.
+    if len("".join(collected).strip()) <= 20:
+        yield grounded_hint
