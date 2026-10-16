@@ -172,6 +172,26 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"], .stApp {
     font-family: var(--font-sans) !important;
 }
 
+/* Hide Streamlit's default auto-generated page navigation (causes duplicates) */
+[data-testid="stSidebar"] [data-testid="stSidebarNav"],
+[data-testid="stSidebar"] nav[data-testid="stSidebarNav"],
+[data-testid="stSidebarNav"] {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Sidebar collapse/expand toggle button — replace text with chevron symbol */
+[data-testid="collapsedControl"] {
+    background: var(--surface) !important;
+    border: 2px solid var(--ink) !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+[data-testid="collapsedControl"] button {
+    color: var(--ink) !important;
+}
+
 [data-testid="stSidebar"] .stButton > button {
     background: transparent !important;
     color: var(--ink) !important;
@@ -192,6 +212,43 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"], .stApp {
 [data-testid="stSidebar"] .stButton > button:hover {
     background: var(--canvas) !important;
     border-color: var(--rule) !important;
+}
+
+/* ── Official Social Login Button Styling ──────────────────────────────── */
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 48px;
+    border-radius: 10px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+.social-btn svg {
+    flex-shrink: 0;
+}
+.social-btn-github {
+    background: #24292f;
+    border: 2px solid #24292f;
+    color: #ffffff;
+}
+.social-btn-github:hover {
+    background: #3b3f46;
+}
+.social-btn-google {
+    background: #ffffff;
+    border: 2px solid var(--ink);
+    color: var(--ink);
+}
+.social-btn-google:hover {
+    background: #f8f9fa;
 }
 
 /* ── Buttons (§3.4) ───────────────────────────────────────────────────── */
@@ -468,6 +525,18 @@ def set_active_repo(repo_data: dict):
         st.query_params["repo"] = full_name
 
 
+# ─── HTML Safety Clean Helper ──────────────────────────────────────────────
+
+def clean_html(html_str: str) -> str:
+    """
+    Strips leading whitespace from every line of an HTML string so that
+    Streamlit's Markdown parser never interprets indented HTML lines as code blocks.
+    """
+    if not html_str:
+        return ""
+    return "\n".join(line.strip() for line in html_str.splitlines() if line.strip())
+
+
 # ─── Top Status Bar (§3.1) ─────────────────────────────────────────────────
 
 def render_top_status_bar(is_live: bool = True, sync_time: Optional[str] = None):
@@ -489,21 +558,14 @@ def render_top_status_bar(is_live: bool = True, sync_time: Optional[str] = None)
     ollama_str = f"OLLAMA ✓ {model_name}" if ollama_ok else "OLLAMA ⚠ unavailable"
     sync_str = f"● LIVE · SYNCED {now_str}" if is_live else f"◐ CACHED · {now_str}"
 
-    st.markdown(f"""
-<div style="background:var(--topbar);color:var(--topbar-text);border-bottom:2px solid var(--ink);padding:7px 1.5rem;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;margin:-1rem -1rem 1.25rem -1rem;position:sticky;top:0;z-index:50;">
-    <div style="display:flex;align-items:center;gap:8px;">
-        <span style="color:var(--mint);">{sync_str}</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:20px;color:var(--topbar-dim);">
-        <span>GITHUB ✓</span>
-        <span>DB ✓</span>
-        <span>{ollama_str}</span>
-    </div>
-    <div style="color:var(--topbar-text);">
-        <span>OCT 2026 · LVL {lvl:02d}</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    topbar_html = (
+        '<div style="background:var(--topbar);color:var(--topbar-text);border-bottom:2px solid var(--ink);padding:7px 1.5rem;font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;margin:-1rem -1rem 1.25rem -1rem;position:sticky;top:0;z-index:50;">'
+        + f'<div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--mint);">{sync_str}</span></div>'
+        + f'<div style="display:flex;align-items:center;gap:20px;color:var(--topbar-dim);"><span>GITHUB ✓</span><span>DB ✓</span><span>{ollama_str}</span></div>'
+        + f'<div style="color:var(--topbar-text);"><span>OCT 2026 · LVL {lvl:02d}</span></div>'
+        + '</div>'
+    )
+    st.markdown(topbar_html, unsafe_allow_html=True)
 
 
 # ─── Page Title Pattern (§2.4) ─────────────────────────────────────────────
@@ -514,14 +576,13 @@ def render_page_header(primary: str, secondary: str, caption: str = ""):
     <strong>Contribution Health</strong> <span class="t-secondary">/ At a Glance</span>
     """
     cap_html = f"<p style='color:var(--text-muted);font-family:var(--font-sans);font-size:14px;margin:0.25rem 0 1.25rem 0;'>{caption}</p>" if caption else "<div style='height:0.75rem;'></div>"
-    st.markdown(f"""
-<div style="margin-bottom:0.75rem;">
-    <h1 style="font-family:var(--font-sans);font-size:32px;font-weight:700;color:var(--ink);margin:0;line-height:1.2;letter-spacing:-0.01em;">
-        {primary} <span style="font-weight:400;color:var(--text-muted);">/ {secondary}</span>
-    </h1>
-    {cap_html}
-</div>
-""", unsafe_allow_html=True)
+    header_html = (
+        '<div style="margin-bottom:0.75rem;">'
+        + f'<h1 style="font-family:var(--font-sans);font-size:32px;font-weight:700;color:var(--ink);margin:0;line-height:1.2;letter-spacing:-0.01em;">{primary} <span style="font-weight:400;color:var(--text-muted);">/ {secondary}</span></h1>'
+        + f'{cap_html}'
+        + '</div>'
+    )
+    st.markdown(header_html, unsafe_allow_html=True)
 
 
 # ─── KPI & Metrics Cards (§3.6.1, §3.6.3) ──────────────────────────────────
@@ -545,38 +606,39 @@ def render_kpi_card(
     if sparkline and len(sparkline) >= 4:
         max_val = max(sparkline) or 1
         pts = " ".join(f"{i * 20},{30 - int((v / max_val) * 24)}" for i, v in enumerate(sparkline[:7]))
-        spark_html = f"""
-        <div style="margin-top:10px;">
-            <svg width="140" height="32" viewBox="0 0 140 32" style="overflow:visible;">
-                <polyline points="{pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </div>
-        """
+        spark_html = (
+            '<div style="margin-top:10px;">'
+            + f'<svg width="140" height="32" viewBox="0 0 140 32" style="overflow:visible;">'
+            + f'<polyline points="{pts}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+            + '</svg></div>'
+        )
 
-    st.markdown(f"""
-<div class="rc-card {fill_cls}">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
-        <span class="t-eyebrow" style="color:var(--ink);">{title}</span>
-        {pill_html}
-    </div>
-    <div class="t-kpi-lg" style="color:var(--ink);margin:0.2rem 0;">{value}</div>
-    {delta_html}
-    {sub_html}
-    {spark_html}
-</div>
-""", unsafe_allow_html=True)
+    card_content = (
+        f'<div class="rc-card {fill_cls}">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">'
+        + f'<span class="t-eyebrow" style="color:var(--ink);">{title}</span>'
+        + f'{pill_html}'
+        + '</div>'
+        + f'<div class="t-kpi-lg" style="color:var(--ink);margin:0.2rem 0;">{value}</div>'
+        + f'{delta_html}'
+        + f'{sub_html}'
+        + f'{spark_html}'
+        + '</div>'
+    )
+    st.markdown(card_content, unsafe_allow_html=True)
 
 
 def render_mini_stat_card(label: str, number: str, caption: str):
     """Renders mini stat card (§3.6.3) with dashed divider."""
-    st.markdown(f"""
-<div class="rc-card" style="padding:16px;">
-    <div class="t-eyebrow" style="color:var(--text-muted);margin-bottom:4px;">{label}</div>
-    <div class="t-kpi-md" style="color:var(--ink);margin:2px 0;">{number}</div>
-    <div style="border-top:var(--bw-dash);margin:10px 0 8px 0;"></div>
-    <div class="t-label" style="color:var(--text-muted);">{caption}</div>
-</div>
-""", unsafe_allow_html=True)
+    card_html = (
+        '<div class="rc-card" style="padding:16px;">'
+        + f'<div class="t-eyebrow" style="color:var(--text-muted);margin-bottom:4px;">{label}</div>'
+        + f'<div class="t-kpi-md" style="color:var(--ink);margin:2px 0;">{number}</div>'
+        + '<div style="border-top:var(--bw-dash);margin:10px 0 8px 0;"></div>'
+        + f'<div class="t-label" style="color:var(--text-muted);">{caption}</div>'
+        + '</div>'
+    )
+    st.markdown(card_html, unsafe_allow_html=True)
 
 
 # ─── Status Pills (§3.5) ───────────────────────────────────────────────────
@@ -617,18 +679,17 @@ def render_ai_block(content: str, model: str = "qwen3:4b", timestamp: str = "14:
         src_items = " · ".join(f"<code>{s}</code>" for s in sources)
         src_html = f"<div style='margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--ai-text);'>SOURCES: {src_items}</div>"
 
-    st.markdown(f"""
-<div class="rc-card card--ai" style="padding:16px;margin:12px 0;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <span class="t-pill" style="color:var(--ai-text);">✦ AI-GENERATED · {model} · {timestamp}</span>
-        <span class="t-label" style="color:var(--ai-text);font-size:11px;">May be wrong. Check the sources.</span>
-    </div>
-    <div style="font-family:var(--font-sans);font-size:14px;line-height:1.6;color:var(--ink);">
-        {content}
-    </div>
-    {src_html}
-</div>
-""", unsafe_allow_html=True)
+    ai_html = (
+        '<div class="rc-card card--ai" style="padding:16px;margin:12px 0;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+        + f'<span class="t-pill" style="color:var(--ai-text);">✦ AI-GENERATED · {model} · {timestamp}</span>'
+        + '<span class="t-label" style="color:var(--ai-text);font-size:11px;">May be wrong. Check the sources.</span>'
+        + '</div>'
+        + f'<div style="font-family:var(--font-sans);font-size:14px;line-height:1.6;color:var(--ink);">{content}</div>'
+        + f'{src_html}'
+        + '</div>'
+    )
+    st.markdown(ai_html, unsafe_allow_html=True)
 
 
 # ─── Evidence & Empty States (§3.7) ────────────────────────────────────────
@@ -636,16 +697,15 @@ def render_ai_block(content: str, model: str = "qwen3:4b", timestamp: str = "14:
 def render_empty_repository_spec(files_searched: Optional[list] = None):
     """Verbatim required empty state (§3.7)."""
     files = ", ".join(files_searched or ["README.md", "CONTRIBUTING.md", "package.json"])
-    st.markdown(f"""
-<div style="background:var(--surface);border:2px dashed var(--ink);border-radius:14px;padding:20px;margin:1rem 0;">
-    <div style="font-family:var(--font-sans);font-weight:600;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:8px;">
-        <span style="font-family:var(--font-mono);font-size:18px;">○</span> Not specified in the repository.
-    </div>
-    <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:6px;">
-        We looked in: <code>{files}</code>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    empty_html = (
+        '<div style="background:var(--surface);border:2px dashed var(--ink);border-radius:14px;padding:20px;margin:1rem 0;">'
+        + '<div style="font-family:var(--font-sans);font-weight:600;font-size:16px;color:var(--ink);display:flex;align-items:center;gap:8px;">'
+        + '<span style="font-family:var(--font-mono);font-size:18px;">○</span> Not specified in the repository.'
+        + '</div>'
+        + f'<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:6px;">We looked in: <code>{files}</code></div>'
+        + '</div>'
+    )
+    st.markdown(empty_html, unsafe_allow_html=True)
 
 
 def render_evidence_badge(badge_type: str) -> str:
@@ -667,21 +727,21 @@ def render_evidence_badge(badge_type: str) -> str:
 def render_level_badge(level: int, xp: int, xp_into: int, xp_needed: int):
     """Solo Ledger XP Progress Card with exact tokens."""
     pct = min(int(xp_into / max(xp_needed, 1) * 100), 100)
-    st.markdown(f"""
-<div class="rc-card card--mint" style="padding:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span class="t-eyebrow" style="color:var(--ink);">LVL {level:02d}</span>
-        <span class="t-label" style="color:var(--text-muted);">{xp_into:,} / {xp_needed:,} XP</span>
-    </div>
-    <div class="ledger-progress-track">
-        <div class="ledger-progress-fill" style="width:{pct}%;"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:4px;">
-        <span>{xp_needed - xp_into} XP to Level {level + 1}</span>
-        <span>{xp:,} XP total</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    badge_html = (
+        '<div class="rc-card card--mint" style="padding:16px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+        + f'<span class="t-eyebrow" style="color:var(--ink);">LVL {level:02d}</span>'
+        + f'<span class="t-label" style="color:var(--text-muted);">{xp_into:,} / {xp_needed:,} XP</span>'
+        + '</div>'
+        + '<div class="ledger-progress-track">'
+        + f'<div class="ledger-progress-fill" style="width:{pct}%;"></div>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:4px;">'
+        + f'<span>{xp_needed - xp_into} XP to Level {level + 1}</span>'
+        + f'<span>{xp:,} XP total</span>'
+        + '</div></div>'
+    )
+    st.markdown(badge_html, unsafe_allow_html=True)
 
 
 def render_difficulty_badge(difficulty: str) -> str:
@@ -714,68 +774,58 @@ def render_issue_card(issue_data: dict, score: float, difficulty: str, fit_reaso
 
     fit_block_html = ""
     if fit_reason:
-        fit_block_html = f"""
-        <div style="background:var(--ai-lilac);border:1.5px solid var(--ai-text);border-radius:8px;padding:10px 14px;margin:10px 0;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <span class="t-pill" style="color:var(--ai-text);">✦ WHY THIS FITS</span>
-                <span class="t-label" style="color:var(--ai-text);">Readiness {score:.0f}/100 (est.)</span>
-            </div>
-            <div style="font-family:var(--font-sans);font-size:13px;color:var(--ink);line-height:1.4;">
-                {fit_reason}
-            </div>
-        </div>
-        """
+        fit_block_html = (
+            '<div style="background:var(--ai-lilac);border:1.5px solid var(--ai-text);border-radius:8px;padding:10px 14px;margin:10px 0;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+            + '<span class="t-pill" style="color:var(--ai-text);">✦ WHY THIS FITS</span>'
+            + f'<span class="t-label" style="color:var(--ai-text);">Readiness {score:.0f}/100 (est.)</span>'
+            + '</div>'
+            + f'<div style="font-family:var(--font-sans);font-size:13px;color:var(--ink);line-height:1.4;">{fit_reason}</div>'
+            + '</div>'
+        )
 
-    st.markdown(f"""
-<div class="rc-card" style="margin-bottom:14px;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
-        <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <span class="t-label" style="font-weight:700;color:var(--ink);">#{number}</span>
-                {diff_pill}
-                {tags_html}
-            </div>
-            <div class="t-h4" style="color:var(--ink);margin-bottom:6px;line-height:1.3;">
-                {title}
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
-                {assignee_html}
-                <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">· Updated recently</span>
-            </div>
-            {fit_block_html}
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-            <div class="t-kpi-md" style="color:var(--green);">{score:.0f}</div>
-            <div class="t-eyebrow" style="color:var(--text-muted);">FIT SCORE</div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    issue_html = (
+        '<div class="rc-card" style="margin-bottom:14px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+        + f'<span class="t-label" style="font-weight:700;color:var(--ink);">#{number}</span>'
+        + f'{diff_pill}'
+        + f'{tags_html}'
+        + '</div>'
+        + f'<div class="t-h4" style="color:var(--ink);margin-bottom:6px;line-height:1.3;">{title}</div>'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">'
+        + f'{assignee_html}'
+        + '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">· Updated recently</span>'
+        + '</div>'
+        + f'{fit_block_html}'
+        + '</div>'
+        + '<div style="text-align:right;flex-shrink:0;">'
+        + f'<div class="t-kpi-md" style="color:var(--green);">{score:.0f}</div>'
+        + '<div class="t-eyebrow" style="color:var(--text-muted);">FIT SCORE</div>'
+        + '</div></div></div>'
+    )
+    st.markdown(issue_html, unsafe_allow_html=True)
 
 
 # ─── Hint Ladder Box (§3.9.1) ──────────────────────────────────────────────
 
 def render_hint_box(hint_text: str, level: int):
     """Solo Ledger Hint Ladder Step (§3.9.1)."""
-    st.markdown(f"""
-<div class="rc-card card--salmon" style="padding:16px;margin:10px 0;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;font-weight:800;">
-                {level}
-            </div>
-            <span class="t-eyebrow" style="color:var(--ink);">HINT LEVEL {level} · REVEALED</span>
-        </div>
-        <span class="t-pill" style="color:var(--ink);border-color:var(--ink);">✓ GUIDANCE</span>
-    </div>
-    <div style="background:var(--surface);border:2px solid var(--ink);border-radius:8px;padding:12px 16px;font-family:var(--font-sans);font-size:14px;color:var(--ink);line-height:1.5;">
-        {hint_text}
-    </div>
-    <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink);margin-top:8px;">
-        Hints are guidance, not a verified fix. Check with repository tests.
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    hint_html = (
+        '<div class="rc-card card--salmon" style="padding:16px;margin:10px 0;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        + f'<div style="width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;font-weight:800;">{level}</div>'
+        + f'<span class="t-eyebrow" style="color:var(--ink);">HINT LEVEL {level} · REVEALED</span>'
+        + '</div>'
+        + '<span class="t-pill" style="color:var(--ink);border-color:var(--ink);">✓ GUIDANCE</span>'
+        + '</div>'
+        + f'<div style="background:var(--surface);border:2px solid var(--ink);border-radius:8px;padding:12px 16px;font-family:var(--font-sans);font-size:14px;color:var(--ink);line-height:1.5;">{hint_text}</div>'
+        + '<div style="font-family:var(--font-mono);font-size:11px;color:var(--ink);margin-top:8px;">Hints are guidance, not a verified fix. Check with repository tests.</div>'
+        + '</div>'
+    )
+    st.markdown(hint_html, unsafe_allow_html=True)
 
 
 # ─── Code-Trail Chain (§3.9.2) ─────────────────────────────────────────────
@@ -785,6 +835,7 @@ def render_code_trail_chain(nodes: List[Dict[str, Any]]):
     Renders Solo Ledger Code-Trail Chain (§3.9.2):
     Nodes: Issue → File → Symbol → Test
     Each node has type eyebrow, mono identifier, match pill, and reason.
+    Constructed safely without multiline indentations.
     """
     node_cards = []
     for i, n in enumerate(nodes):
@@ -805,40 +856,32 @@ def render_code_trail_chain(nodes: List[Dict[str, Any]]):
 
         link_html = f'<a href="{url}" target="_blank" rel="noopener noreferrer" style="font-family:var(--font-mono);font-size:11px;color:var(--link);text-decoration:underline;margin-top:6px;display:inline-block;">↗ GitHub</a>' if url else ""
 
-        card_html = f"""
-        <div style="flex:1;min-width:180px;background:var(--surface);border:2px solid var(--ink);border-radius:10px;padding:12px 14px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <span class="t-eyebrow" style="color:var(--text-muted);">{ntype}</span>
-                {pill}
-            </div>
-            <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);word-break:break-all;margin:4px 0;">
-                {name}
-            </div>
-            <div style="font-family:var(--font-sans);font-size:12px;color:var(--ink);line-height:1.4;">
-                {reason}
-            </div>
-            {link_html}
-        </div>
-        """
+        card_html = (
+            '<div style="flex:1;min-width:180px;background:var(--surface);border:2px solid var(--ink);border-radius:10px;padding:12px 14px;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+            + f'<span class="t-eyebrow" style="color:var(--text-muted);">{ntype}</span>'
+            + f'{pill}'
+            + '</div>'
+            + f'<div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);word-break:break-all;margin:4px 0;">{name}</div>'
+            + f'<div style="font-family:var(--font-sans);font-size:12px;color:var(--ink);line-height:1.4;">{reason}</div>'
+            + f'{link_html}'
+            + '</div>'
+        )
         node_cards.append(card_html)
 
-    # Render chain with arrows between cards
     chain_items = []
     for idx, c in enumerate(node_cards):
         chain_items.append(c)
         if idx < len(node_cards) - 1:
-            arrow = """
-            <div style="display:flex;align-items:center;justify-content:center;padding:0 6px;">
-                <span style="font-family:var(--font-mono);font-size:20px;font-weight:900;color:var(--ink);">→</span>
-            </div>
-            """
+            arrow = '<div style="display:flex;align-items:center;justify-content:center;padding:0 6px;"><span style="font-family:var(--font-mono);font-size:20px;font-weight:900;color:var(--ink);">→</span></div>'
             chain_items.append(arrow)
 
-    st.markdown(f"""
-    <div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:1rem 0;">
-        {''.join(chain_items)}
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        '<div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:1rem 0;">'
+        + ''.join(chain_items)
+        + '</div>',
+        unsafe_allow_html=True
+    )
 
 
 # ─── Diff Viewer (§3.10) ───────────────────────────────────────────────────
@@ -850,13 +893,12 @@ def render_diff_viewer(diff_text: str, filename: str = "patch.diff"):
     Added lines --mint bg with +, removed lines --salmon bg with -.
     """
     if not diff_text or not diff_text.strip():
-        st.markdown(f"""
-        <div style="background:var(--surface);border:2px dashed var(--ink);border-radius:8px;padding:24px;text-align:center;">
-            <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted);">
-                Paste a unified diff or write a plan to review.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        empty_diff = (
+            '<div style="background:var(--surface);border:2px dashed var(--ink);border-radius:8px;padding:24px;text-align:center;">'
+            + '<div style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted);">Paste a unified diff or write a plan to review.</div>'
+            + '</div>'
+        )
+        st.markdown(empty_diff, unsafe_allow_html=True)
         return
 
     lines = diff_text.splitlines()
@@ -875,21 +917,20 @@ def render_diff_viewer(diff_text: str, filename: str = "patch.diff"):
         else:
             formatted_lines.append(f'<div style="background:var(--surface);color:var(--ink);padding:2px 8px;font-family:var(--font-mono);font-size:12px;white-space:pre-wrap;">{escaped}</div>')
 
-    st.markdown(f"""
-    <div style="background:var(--surface);border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin:1rem 0;">
-        <div style="background:var(--canvas);border-bottom:2px solid var(--ink);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-family:var(--font-mono);font-weight:700;font-size:13px;color:var(--ink);">{filename}</span>
-            <div style="font-family:var(--font-mono);font-size:12px;font-weight:700;">
-                <span style="color:var(--green);">+{additions}</span>
-                <span style="color:var(--text-muted);"> · </span>
-                <span style="color:var(--error-text);">−{deletions}</span>
-            </div>
-        </div>
-        <div style="max-height:420px;overflow-y:auto;overflow-x:auto;padding:4px 0;">
-            {''.join(formatted_lines)}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    viewer_html = (
+        '<div style="background:var(--surface);border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin:1rem 0;">'
+        + '<div style="background:var(--canvas);border-bottom:2px solid var(--ink);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">'
+        + f'<span style="font-family:var(--font-mono);font-weight:700;font-size:13px;color:var(--ink);">{filename}</span>'
+        + '<div style="font-family:var(--font-mono);font-size:12px;font-weight:700;">'
+        + f'<span style="color:var(--green);">+{additions}</span>'
+        + '<span style="color:var(--text-muted);"> · </span>'
+        + f'<span style="color:var(--error-text);">−{deletions}</span>'
+        + '</div></div>'
+        + '<div style="max-height:420px;overflow-y:auto;overflow-x:auto;padding:4px 0;">'
+        + ''.join(formatted_lines)
+        + '</div></div>'
+    )
+    st.markdown(viewer_html, unsafe_allow_html=True)
 
 
 # ─── Test Status Chip (§3.10) ──────────────────────────────────────────────
@@ -916,12 +957,13 @@ def render_test_status_chip(status: str = "not_run", command: str = "pytest -x",
         chip = '<span class="pill" style="color:var(--text-muted);border:1.5px dashed var(--text-muted);background:transparent;">○ NOT RUN</span>'
         desc = f"No tests were executed. Review is static. Configured command: `{command}` (Limits: {limits})."
 
-    st.markdown(f"""
-    <div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--ink);border-radius:8px;padding:6px 12px;margin:6px 0;">
-        {chip}
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">{desc}</span>
-    </div>
-    """, unsafe_allow_html=True)
+    chip_html = (
+        '<div style="display:inline-flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--ink);border-radius:8px;padding:6px 12px;margin:6px 0;">'
+        + f'{chip}'
+        + f'<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">{desc}</span>'
+        + '</div>'
+    )
+    st.markdown(chip_html, unsafe_allow_html=True)
 
 
 # ─── Leaderboard Row (§513) ────────────────────────────────────────────────
@@ -939,28 +981,21 @@ def render_leaderboard_row(rank: int, display_name: str, level: int, xp: int, de
 
     delta_color = "var(--green)" if delta.startswith("▲") else ("var(--error-text)" if delta.startswith("▼") else "var(--text-muted)")
 
-    st.markdown(f"""
-    <div style="{bg_style}border-radius:8px;padding:10px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
-            <span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:var(--ink);width:32px;">{rank_str}</span>
-            <div style="width:34px;height:34px;border-radius:50%;background:var(--canvas);border:1.5px solid var(--ink);display:grid;place-items:center;font-family:var(--font-mono);font-weight:800;font-size:13px;flex-shrink:0;">
-                {initial}
-            </div>
-            <div style="min-width:0;">
-                <div style="font-family:var(--font-sans);font-weight:700;font-size:14px;color:var(--ink);display:flex;align-items:center;">
-                    {display_name} {you_pill}
-                </div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">
-                    LVL {level:02d}
-                </div>
-            </div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-            <div style="font-family:var(--font-mono);font-weight:800;font-size:15px;color:var(--ink);">{xp:,} XP</div>
-            <div style="font-family:var(--font-mono);font-size:11px;color:{delta_color};">{delta}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    row_html = (
+        f'<div style="{bg_style}border-radius:8px;padding:10px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
+        + '<div style="display:flex;align-items:center;gap:14px;min-width:0;">'
+        + f'<span style="font-family:var(--font-mono);font-size:18px;font-weight:800;color:var(--ink);width:32px;">{rank_str}</span>'
+        + f'<div style="width:34px;height:34px;border-radius:50%;background:var(--canvas);border:1.5px solid var(--ink);display:grid;place-items:center;font-family:var(--font-mono);font-weight:800;font-size:13px;flex-shrink:0;">{initial}</div>'
+        + '<div style="min-width:0;">'
+        + f'<div style="font-family:var(--font-sans);font-weight:700;font-size:14px;color:var(--ink);display:flex;align-items:center;">{display_name} {you_pill}</div>'
+        + f'<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">LVL {level:02d}</div>'
+        + '</div></div>'
+        + '<div style="text-align:right;flex-shrink:0;">'
+        + f'<div style="font-family:var(--font-mono);font-weight:800;font-size:15px;color:var(--ink);">{xp:,} XP</div>'
+        + f'<div style="font-family:var(--font-mono);font-size:11px;color:{delta_color};">{delta}</div>'
+        + '</div></div>'
+    )
+    st.markdown(row_html, unsafe_allow_html=True)
 
 
 # ─── Achievement Badge (§518) ──────────────────────────────────────────────
@@ -982,21 +1017,16 @@ def render_achievement_badge(name: str, desc: str, earned: bool, earned_date: st
         pill = '<span class="pill" style="color:var(--text-muted);border:1px dashed var(--text-muted);font-size:9px;">LOCKED</span>'
         date_str = ""
 
-    st.markdown(f"""
-    <div class="rc-card" style="text-align:center;padding:16px;">
-        <div style="width:72px;height:72px;border-radius:50%;{border_style}display:grid;place-items:center;margin:0 auto 10px auto;font-size:24px;color:var(--ink);">
-            {icon_symbol}
-        </div>
-        <div style="font-family:var(--font-sans);font-weight:700;font-size:13px;color:var(--ink);margin-bottom:4px;">
-            {name}
-        </div>
-        <div style="font-family:var(--font-sans);font-size:11px;color:var(--text-muted);line-height:1.3;margin-bottom:8px;min-height:30px;">
-            {desc}
-        </div>
-        {pill}
-        {date_str}
-    </div>
-    """, unsafe_allow_html=True)
+    badge_html = (
+        '<div class="rc-card" style="text-align:center;padding:16px;">'
+        + f'<div style="width:72px;height:72px;border-radius:50%;{border_style}display:grid;place-items:center;margin:0 auto 10px auto;font-size:24px;color:var(--ink);">{icon_symbol}</div>'
+        + f'<div style="font-family:var(--font-sans);font-weight:700;font-size:13px;color:var(--ink);margin-bottom:4px;">{name}</div>'
+        + f'<div style="font-family:var(--font-sans);font-size:11px;color:var(--text-muted);line-height:1.3;margin-bottom:8px;min-height:30px;">{desc}</div>'
+        + f'{pill}'
+        + f'{date_str}'
+        + '</div>'
+    )
+    st.markdown(badge_html, unsafe_allow_html=True)
 
 
 # ─── Sidebar Navigation (§3.2) ─────────────────────────────────────────────
@@ -1011,19 +1041,15 @@ def render_sidebar_nav(current_page: str = ""):
     """
     with st.sidebar:
         # Wordmark (§3.2)
-        st.markdown("""
-<div style="margin-bottom:1.25rem;border-bottom:2px solid var(--ink);padding-bottom:1rem;">
-    <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border:2px solid var(--ink);border-radius:8px;background:var(--mint);display:grid;place-items:center;font-size:16px;font-weight:800;color:var(--ink);">
-            ◎
-        </div>
-        <div>
-            <div style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--ink);line-height:1.2;">RepoCompass</div>
-            <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;">Solo Ledger v1.0</div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+        st.markdown(
+            '<div style="margin-bottom:1.25rem;border-bottom:2px solid var(--ink);padding-bottom:1rem;">'
+            + '<div style="display:flex;align-items:center;gap:10px;">'
+            + '<div style="width:34px;height:34px;border:2px solid var(--ink);border-radius:8px;background:var(--mint);display:grid;place-items:center;font-size:16px;font-weight:800;color:var(--ink);">◎</div>'
+            + '<div><div style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--ink);line-height:1.2;">RepoCompass</div>'
+            + '<div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;">Solo Ledger v1.0</div>'
+            + '</div></div></div>',
+            unsafe_allow_html=True
+        )
 
         nav_items = [
             ("dashboard", "▣ Dashboard", "pages/02_dashboard.py"),
@@ -1051,33 +1077,29 @@ def render_sidebar_nav(current_page: str = ""):
         active_name = active_repo.get("full_name", "No repo selected") if active_repo else "No repo selected"
         freshness_glyph = "● live" if active_repo else "○ none"
 
-        st.markdown(f"""
-<div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--rule);">
-    <div class="t-eyebrow" style="color:var(--text-muted);margin-bottom:6px;">ACTIVE REPOSITORY</div>
-    <div style="background:var(--canvas);border:1.5px solid var(--ink);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            {active_name}
-        </span>
-        <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);font-weight:600;">{freshness_glyph}</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+        st.markdown(
+            '<div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--rule);">'
+            + '<div class="t-eyebrow" style="color:var(--text-muted);margin-bottom:6px;">ACTIVE REPOSITORY</div>'
+            + '<div style="background:var(--canvas);border:1.5px solid var(--ink);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">'
+            + f'<span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{active_name}</span>'
+            + f'<span style="font-family:var(--font-mono);font-size:10px;color:var(--green);font-weight:600;">{freshness_glyph}</span>'
+            + '</div></div>',
+            unsafe_allow_html=True
+        )
 
         user = get_current_user()
         if user:
             disp_name = user.get("display_name", "Contributor")
             initial = disp_name[0].upper() if disp_name else "C"
-            st.markdown(f"""
-<div style="margin-top:1.25rem;background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;">
-    <div style="width:36px;height:36px;border-radius:50%;background:var(--mint);border:2px solid var(--ink);color:var(--ink);font-weight:800;font-family:var(--font-mono);display:grid;place-items:center;font-size:14px;flex-shrink:0;">
-        {initial}
-    </div>
-    <div style="flex:1;min-width:0;">
-        <div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{disp_name}</div>
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">LVL {user.get('level', 1):02d} · {user.get('xp', 0):,} XP</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+            st.markdown(
+                '<div style="margin-top:1.25rem;background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;">'
+                + f'<div style="width:36px;height:36px;border-radius:50%;background:var(--mint);border:2px solid var(--ink);color:var(--ink);font-weight:800;font-family:var(--font-mono);display:grid;place-items:center;font-size:14px;flex-shrink:0;">{initial}</div>'
+                + '<div style="flex:1;min-width:0;">'
+                + f'<div style="font-family:var(--font-sans);font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{disp_name}</div>'
+                + f'<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">LVL {user.get("level", 1):02d} · {user.get("xp", 0):,} XP</div>'
+                + '</div></div>',
+                unsafe_allow_html=True
+            )
 
             if st.button("🚪 Sign Out", key="nav_signout_solo", use_container_width=True):
                 clear_current_user()
@@ -1086,11 +1108,27 @@ def render_sidebar_nav(current_page: str = ""):
             if st.button("🔑 Sign In", key="nav_signin_solo", use_container_width=True):
                 st.switch_page("streamlit_app.py")
 
-        st.markdown("""
-<div style="margin-top:1rem;padding:0.2rem;color:#64748B;font-size:0.72rem;display:flex;align-items:center;gap:6px;">
-    <span>RepoCompass v1.2</span> · <span>Zero-Trust Sandbox</span>
-</div>
-""", unsafe_allow_html=True)
+        st.markdown(
+            '<div style="margin-top:1rem;padding:0.2rem;color:#64748B;font-size:0.72rem;display:flex;align-items:center;gap:6px;">'
+            + '<span>RepoCompass v1.2</span> · <span>Zero-Trust Sandbox</span></div>',
+            unsafe_allow_html=True
+        )
+
+
+def render_social_login_buttons():
+    """
+    Renders official GitHub and Google sign-in buttons with their real SVG logos.
+    """
+    st.markdown(
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">'
+        + '<div class="social-btn social-btn-github" style="pointer-events:none;">'
+        + '<svg width="20" height="20" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" fill="#fff"/></svg>'
+        + '<span>Continue with GitHub</span></div>'
+        + '<div class="social-btn social-btn-google" style="pointer-events:none;">'
+        + '<svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>'
+        + '<span>Continue with Google</span></div></div>',
+        unsafe_allow_html=True
+    )
 
 
 def success_toast(msg: str):

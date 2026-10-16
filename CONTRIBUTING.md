@@ -35,7 +35,7 @@ Thank you for your interest in contributing to **RepoCompass**! We are building 
 5. **Start Local AI (Optional for AI features)**:
    ```bash
    ollama serve
-   ollama pull qwen3:4b
+   ollama pull qwen3:4b-instruct
    ```
 
 ---
